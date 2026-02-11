@@ -14,7 +14,7 @@ import {
 } from '@/data/simulator-data'
 import { searchOccupations } from '@/data/occupations'
 import {
-  chatWithGroq, analyzeResults,
+  chatWithGroq, analyzeResults, rankCountriesWithAI,
   getStoredApiKey,
   type ChatMessage, type GatheredData,
 } from '@/lib/groq'
@@ -59,12 +59,16 @@ const TOTAL_STAGES = STAGE_META.length
 // ===== AI SYSTEM PROMPT =====
 const AI_SYSTEM_PROMPT = `คุณชื่อ "Rain" ที่ปรึกษาย้ายประเทศ คุยสนุกเป็นกันเอง สั้นกระชับ ใช้ emoji บ้าง
 
-เก็บข้อมูล 5 อย่าง ถามทีละเรื่อง:
-1. ทำไมอยากย้าย → goals (1-3): money-job | balance | family | stable | lifestyle
-2. อาชีพอะไร → occupation: software | engineering | accounting | healthcare | chef | other
-3. อายุ → age: "18-24" | "25-32" | "33-39" | "40-44" | "45+"
-4. ไปกับใคร → family: "single" | "couple" | "family"
-5. เงินเดือน → monthlyIncome: number (บาท)
+Flow การสนทนา:
+1. คำถามแรก: ถาม "เล่าให้ฟังหน่อยสิ ทำไมถึงอยากย้าย?" → ให้ user ระบายอิสระ ห้ามให้เลือกช้อย
+2. หลัง user เล่า: ตีความเหตุผลของเขา → ตอบว่า "เข้าใจแล้ว! เหตุผลหลักคือ [สรุปสั้นๆ] สินะ 💪"
+   แล้ว set goals ใน gathered (1-3): money-job | balance | family | stable | lifestyle
+   จบด้วย "มีเหตุผลอื่นอีกไหม?"
+3. หลังได้ goals ครบ: ถามที่เหลือทีละเรื่อง
+   - อาชีพอะไร → occupation: software | engineering | accounting | healthcare | chef | other
+   - อายุ → age: "18-24" | "25-32" | "33-39" | "40-44" | "45+"
+   - ไปกับใคร → family: "single" | "couple" | "family"
+   - เงินเดือน → monthlyIncome: number (บาท)
 
 สำคัญมาก:
 - ตอบสั้น 1-2 ประโยค ห้ามยาว
@@ -122,6 +126,7 @@ export function ChatSimulator() {
   const [chipSelected, setChipSelected] = useState<string[]>([])
   const [occChatSearch, setOccChatSearch] = useState('')
   const [showOccSearch, setShowOccSearch] = useState(false)
+  const [goalsConfirmed, setGoalsConfirmed] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -164,7 +169,9 @@ export function ChatSimulator() {
       const aiRes = await chatWithGroq(apiKey, newHistory)
       // Merge gathered: keep previously confirmed data, add new data from AI
       const merged: GatheredData = {
-        goals: aiRes.gathered.goals.length > 0 ? aiRes.gathered.goals : aiGathered.goals,
+        goals: aiRes.gathered.goals.length > 0
+          ? [...new Set([...aiGathered.goals, ...aiRes.gathered.goals])]
+          : aiGathered.goals,
         occupation: aiRes.gathered.occupation || aiGathered.occupation,
         monthlyIncome: aiRes.gathered.monthlyIncome || aiGathered.monthlyIncome,
         age: aiRes.gathered.age || aiGathered.age,
@@ -200,10 +207,26 @@ export function ChatSimulator() {
     setQuickProfile({ age: g.age, monthlyIncome: String(g.monthlyIncome), savings: '', family: g.family })
   }
 
-  const goToCountryAnalysis = () => {
+  const goToCountryAnalysis = async () => {
     applyGatheredData(aiGathered)
     setPhase('analyzing')
-    setTimeout(() => {
+    try {
+      const rankings = await rankCountriesWithAI(apiKey, {
+        goals: aiGathered.goals, occupation: aiGathered.occupation,
+        monthlyIncome: aiGathered.monthlyIncome, age: aiGathered.age, family: aiGathered.family,
+      }, COUNTRIES)
+      const results: MatchResult[] = rankings
+        .map(r => {
+          const country = COUNTRIES.find(c => c.id === r.countryId)
+          if (!country) return null
+          return { country, matchPct: r.matchPct, highlights: r.highlights, challenges: r.challenges.length > 0 ? r.challenges : country.cons, occupationNote: r.reason }
+        })
+        .filter((r): r is MatchResult => r !== null)
+      setMatchResults(results)
+      runAiAnalysis(aiGathered, results)
+      setPhase('countryResults')
+    } catch {
+      // Fallback to hardcoded matching if AI fails
       const params: MatchParams = {
         goals: aiGathered.goals, occupation: aiGathered.occupation,
         monthlyIncome: aiGathered.monthlyIncome, age: aiGathered.age, family: aiGathered.family,
@@ -212,7 +235,7 @@ export function ChatSimulator() {
       setMatchResults(results)
       runAiAnalysis(aiGathered, results)
       setPhase('countryResults')
-    }, 2500)
+    }
   }
 
   const goToAuSim = () => {
@@ -251,8 +274,14 @@ export function ChatSimulator() {
   type ChipMode = 'none' | 'goals' | 'goals-confirm' | 'occ-search' | 'age' | 'family' | 'income'
   const getChipMode = (): ChipMode => {
     if (aiLoading || aiGathered.ready || aiMessages.length < 1) return 'none'
-    // Goals phase
-    if (aiGathered.goals.length === 0) return 'goals'
+    // Goals phase: let user type freely first, then show confirm chips
+    if (aiGathered.goals.length === 0) {
+      // After 2+ user messages without goals, show chips as fallback
+      const userMsgCount = aiMessages.filter(m => m.role === 'user').length
+      return userMsgCount >= 2 ? 'goals' : 'none'
+    }
+    // Goals detected but not confirmed: show remaining goals + "ไปต่อ"
+    if (!goalsConfirmed) return 'goals-confirm'
     // Occupation phase: show search
     if (!aiGathered.occupation) return 'occ-search'
     // Age
@@ -393,7 +422,7 @@ export function ChatSimulator() {
     setAuProfile({ english: '', experience: '', education: '', thaiSalary: '', city: 'melbourne' })
     setSimStage(0); setSavingsInput(''); setIsMotherLord(false); setInitialAUD(0); setChoices({})
     setAiMessages([]); setAiChatHistory([]); setAiInput(''); setAiGathered({ goals: [], occupation: '', monthlyIncome: 0, age: '', family: '', ready: false })
-    setAiAnalysis(''); setAiError(''); setOccDisplayLabel(''); setChipSelected([]); setShowOccSearch(false); setOccChatSearch(''); setAiMode(false)
+    setAiAnalysis(''); setAiError(''); setOccDisplayLabel(''); setChipSelected([]); setShowOccSearch(false); setOccChatSearch(''); setAiMode(false); setGoalsConfirmed(false)
     // Re-start AI chat after reset
     setTimeout(() => {
       setAiMode(true)
@@ -455,7 +484,7 @@ export function ChatSimulator() {
             </div>
           )}
 
-          {/* ===== GOALS: multi-select chips ===== */}
+          {/* ===== GOALS: multi-select chips (fallback if AI didn't detect) ===== */}
           {chipMode === 'goals' && (
             <div className="quick-replies animate-fade-in">
               <div className="chip-hint">กดเลือก 1-3 ข้อ แล้วกดส่ง ✨ หรือพิมพ์เอง</div>
@@ -475,6 +504,41 @@ export function ChatSimulator() {
                   ✅ ส่ง {chipSelected.length} ข้อ
                 </button>
               )}
+            </div>
+          )}
+
+          {/* ===== GOALS CONFIRM: after AI detected goals, ask "มีอื่นอีกไหม?" ===== */}
+          {chipMode === 'goals-confirm' && (
+            <div className="quick-replies animate-fade-in">
+              <div className="chip-hint">เลือกเพิ่มได้ หรือกด &ldquo;ไปต่อ&rdquo; 👇</div>
+              <div className="chip-grid">
+                {Object.entries(GOAL_LABELS)
+                  .filter(([id]) => !aiGathered.goals.includes(id))
+                  .map(([id, label]) => (
+                    <button
+                      key={id}
+                      onClick={() => toggleChip(id)}
+                      className={`quick-chip ${chipSelected.includes(id) ? 'selected' : ''}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+              </div>
+              {chipSelected.length > 0 && (
+                <button onClick={() => {
+                  const text = chipSelected.map(id => GOAL_LABELS[id] || id).join(', ')
+                  sendMessage(`เพิ่มเหตุผลอีก: ${text}`)
+                  setGoalsConfirmed(true)
+                }} className="chip-confirm animate-fade-in">
+                  ✅ เพิ่ม {chipSelected.length} ข้อ แล้วไปต่อ
+                </button>
+              )}
+              <button onClick={() => {
+                setGoalsConfirmed(true)
+                sendMessage('ไม่มีเหตุผลอื่นแล้ว ไปต่อเลย')
+              }} className="chip-confirm" style={{ background: 'linear-gradient(135deg, #e5e7eb, #d1d5db)', color: '#374151', marginTop: '4px' }}>
+                👉 ไม่มีแล้ว ไปต่อเลย
+              </button>
             </div>
           )}
 
@@ -808,9 +872,12 @@ export function ChatSimulator() {
         <div className="sim-scroll flex flex-col items-center justify-center min-h-[400px]">
           <div className="analyzing-screen animate-fade-in text-center">
             <div className="text-5xl mb-4 analyzing-globe">🌍</div>
-            <div className="text-xl font-bold text-gray-800 mb-2">กำลังวิเคราะห์ {COUNTRIES.length} ประเทศ...</div>
+            <div className="text-xl font-bold text-gray-800 mb-2">{aiMode ? '🤖 AI กำลังวิเคราะห์ให้คุณ...' : `กำลังวิเคราะห์ ${COUNTRIES.length} ประเทศ...`}</div>
             <div className="text-sm text-gray-500 mb-4">
-              เทียบ {goals.length} goals × อาชีพ {occDisplayLabel || OCCUPATIONS.find(o => o.id === occupation)?.labelTH} × {COUNTRIES.length} ประเทศ
+              {aiMode
+                ? `วิเคราะห์ข้อมูลของคุณเทียบ ${COUNTRIES.length} ประเทศ — เงินเดือน วีซ่า ค่าครองชีพจริง`
+                : `เทียบ ${goals.length} goals × อาชีพ ${occDisplayLabel || OCCUPATIONS.find(o => o.id === occupation)?.labelTH} × ${COUNTRIES.length} ประเทศ`
+              }
             </div>
             <div className="analyzing-bar">
               <div className="analyzing-bar-fill" />
@@ -831,7 +898,7 @@ export function ChatSimulator() {
         <div className="sim-scroll">
           <div className="text-center mb-4 animate-fade-in">
             <div className="text-3xl font-bold text-gray-800 mb-1">🌍 ผลวิเคราะห์ของคุณ!</div>
-            <div className="text-sm text-gray-500">จาก {COUNTRIES.length} ประเทศ — นี่คือ Top 5 ที่เหมาะกับคุณ</div>
+            <div className="text-sm text-gray-500">{aiMode ? '🤖 AI วิเคราะห์จาก' : 'จาก'} {COUNTRIES.length} ประเทศ — นี่คือ Top 5 ที่เหมาะกับคุณ</div>
           </div>
 
           <div className="space-y-3">

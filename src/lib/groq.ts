@@ -147,6 +147,125 @@ export async function analyzeResults(
   return data.choices?.[0]?.message?.content || ''
 }
 
+/** AI-powered country ranking (replaces hardcoded matchCountries) */
+export async function rankCountriesWithAI(
+  apiKey: string,
+  userProfile: {
+    goals: string[]
+    occupation: string
+    monthlyIncome: number
+    age: string
+    family: string
+  },
+  countries: Array<{
+    id: string; name: string; nameTH: string; flag: string
+    avgSalaryUSD: number; costIndex: number
+    hotJobs: string[]; visaPaths: string[]
+    pros: string[]; cons: string[]
+    thaiCommunity: string
+    scores: {
+      costOfLiving: number; safety: number; healthcare: number; education: number
+      workLifeBalance: number; taxFriendliness: number; immigrationEase: number
+      jobMarket: number; climate: number; politicalStability: number
+    }
+  }>,
+): Promise<Array<{
+  countryId: string; matchPct: number; reason: string
+  highlights: string[]; challenges: string[]
+}>> {
+  const goalLabels: Record<string, string> = {
+    'money-job': 'เงินดี หางานง่าย',
+    'balance': 'Work-life balance',
+    'family': 'ลูกเรียนดี สวัสดิการ',
+    'stable': 'การเมืองมั่นคง ปลอดภัย',
+    'lifestyle': 'ย้ายง่าย เกษียณสบาย',
+  }
+  const userGoals = userProfile.goals.map(g => goalLabels[g] || g).join(', ')
+
+  const countrySummaries = countries.map(c =>
+    `${c.flag} ${c.id}: salary $${(c.avgSalaryUSD / 1000).toFixed(0)}K/yr, cost ${c.costIndex}% of TH, ` +
+    `hotJobs: ${c.hotJobs.join('/')}, visa: ${c.visaPaths.slice(0, 2).join(', ')}, ` +
+    `safety:${c.scores.safety} healthcare:${c.scores.healthcare} edu:${c.scores.education} ` +
+    `wlb:${c.scores.workLifeBalance} immigration:${c.scores.immigrationEase} ` +
+    `jobMkt:${c.scores.jobMarket} climate:${c.scores.climate} thaiComm:${c.thaiCommunity}`
+  ).join('\n')
+
+  const messages: ChatMessage[] = [
+    {
+      role: 'system',
+      content: `คุณเป็นผู้เชี่ยวชาญด้านการย้ายประเทศจากไทย มีความรู้ลึกเรื่องวีซ่า ตลาดงาน ค่าครองชีพ
+
+วิเคราะห์ว่าประเทศไหนเหมาะกับ user ที่สุด พิจารณา:
+- เป้าหมาย user (สำคัญที่สุด)
+- อาชีพตรงกับ hotJobs ไหม
+- เงินเดือนปัจจุบันเทียบค่าครองชีพปลายทาง
+- อายุกับความง่ายในการขอวีซ่า (45+ อาจมีข้อจำกัด)
+- ไปกับใคร (ครอบครัว→ดู education+healthcare มากขึ้น)
+
+ให้คะแนน matchPct (15-97) ตามความเหมาะสมจริงๆ ห้ามให้สูงทุกประเทศ
+เลือก Top 5 เท่านั้น
+
+ตอบ JSON เท่านั้น ห้ามเขียนอธิบายก่อน/หลัง:
+{"rankings":[{"countryId":"...", "matchPct":85, "reason":"เหตุผลสั้น 1-2 ประโยค", "highlights":["✅ จุดเด่น 1","✅ จุดเด่น 2","🔥 อาชีพ demand"], "challenges":["⚠️ ข้อควรรู้ 1","⚠️ ข้อควรรู้ 2"]}]}`,
+    },
+    {
+      role: 'user',
+      content: `ข้อมูลของฉัน:
+- เป้าหมาย: ${userGoals}
+- อาชีพ: ${userProfile.occupation}
+- เงินเดือนปัจจุบัน: ${userProfile.monthlyIncome.toLocaleString()} บาท/เดือน
+- อายุ: ${userProfile.age}
+- ไปกับ: ${userProfile.family === 'single' ? 'คนเดียว' : userProfile.family === 'couple' ? 'คนรัก' : 'ครอบครัว'}
+
+ข้อมูลประเทศ (scores 1-10):
+${countrySummaries}
+
+วิเคราะห์ Top 5 ที่เหมาะกับฉันที่สุด:`,
+    },
+  ]
+
+  const res = await fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages,
+      temperature: 0.4,
+      max_tokens: 1500,
+    }),
+  })
+
+  if (!res.ok) throw new Error(`AI ranking failed: ${res.status}`)
+  const data = await res.json()
+  const content = data.choices?.[0]?.message?.content || ''
+
+  // Parse rankings from AI response
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let parsed: any = null
+  try {
+    parsed = JSON.parse(content)
+  } catch {
+    const match = content.match(/\{[\s\S]*"rankings"\s*:\s*\[[\s\S]*\]\s*\}/)
+    if (match) { try { parsed = JSON.parse(match[0]) } catch { /* malformed */ } }
+  }
+
+  if (!parsed || !Array.isArray(parsed.rankings)) {
+    throw new Error('AI ranking response invalid')
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return parsed.rankings.slice(0, 5).map((r: any) => ({
+    countryId: r.countryId || '',
+    matchPct: Math.min(97, Math.max(15, Number(r.matchPct) || 50)),
+    reason: r.reason || '',
+    highlights: Array.isArray(r.highlights) ? r.highlights : [],
+    challenges: Array.isArray(r.challenges) ? r.challenges : [],
+  }))
+}
+
 /** ดึง API key */
 export function getStoredApiKey(): string {
   return DEFAULT_KEY
