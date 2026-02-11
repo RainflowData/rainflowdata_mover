@@ -168,7 +168,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'australia', name: 'Australia', nameTH: 'ออสเตรเลีย', flag: '🇦🇺',
     scores: { costOfLiving: 4, safety: 8, healthcare: 9, education: 9, workLifeBalance: 8, taxFriendliness: 5, immigrationEase: 7, jobMarket: 8, climate: 8, politicalStability: 9 },
-    avgSalaryUSD: 65000, costIndex: 250,
+    avgSalaryUSD: 68000, costIndex: 250,
     hotJobs: ['software', 'data-ai', 'engineering', 'healthcare', 'trades', 'chef', 'accounting'],
     visaPaths: ['Skilled 189/190', 'Regional 491', 'Employer 482', 'WHV 417'],
     pros: ['เงินเดือนสูงมาก', 'Medicare ฟรี', 'อากาศดี', 'Skill list ยาว', 'มีคนไทยเยอะ'],
@@ -178,7 +178,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'newzealand', name: 'New Zealand', nameTH: 'นิวซีแลนด์', flag: '🇳🇿',
     scores: { costOfLiving: 4, safety: 9, healthcare: 8, education: 8, workLifeBalance: 9, taxFriendliness: 5, immigrationEase: 6, jobMarket: 6, climate: 6, politicalStability: 9 },
-    avgSalaryUSD: 48000, costIndex: 230,
+    avgSalaryUSD: 55000, costIndex: 230,
     hotJobs: ['software', 'engineering', 'healthcare', 'trades'],
     visaPaths: ['Skilled Migrant', 'Essential Skills', 'WHV'],
     pros: ['ธรรมชาติสวยมาก', 'Work-life balance เยี่ยม', 'คนสบายๆ', 'ปลอดภัยมาก'],
@@ -188,7 +188,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'canada', name: 'Canada', nameTH: 'แคนาดา', flag: '🇨🇦',
     scores: { costOfLiving: 5, safety: 8, healthcare: 8, education: 9, workLifeBalance: 7, taxFriendliness: 4, immigrationEase: 7, jobMarket: 7, climate: 3, politicalStability: 9 },
-    avgSalaryUSD: 55000, costIndex: 220,
+    avgSalaryUSD: 60000, costIndex: 220,
     hotJobs: ['software', 'data-ai', 'healthcare', 'engineering', 'trades'],
     visaPaths: ['Express Entry', 'PNP', 'LMIA Work Permit'],
     pros: ['Diverse มาก เปิดรับผู้อพยพ', 'Express Entry ชัดเจน', 'การศึกษาดีมาก'],
@@ -198,7 +198,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'usa', name: 'USA', nameTH: 'อเมริกา', flag: '🇺🇸',
     scores: { costOfLiving: 5, safety: 5, healthcare: 5, education: 9, workLifeBalance: 4, taxFriendliness: 6, immigrationEase: 3, jobMarket: 9, climate: 7, politicalStability: 6 },
-    avgSalaryUSD: 75000, costIndex: 260,
+    avgSalaryUSD: 80000, costIndex: 260,
     hotJobs: ['software', 'data-ai', 'healthcare', 'engineering'],
     visaPaths: ['H1B (lottery)', 'L-1', 'EB Green Card', 'O-1 Extraordinary'],
     pros: ['เงินเดือนสูงสุดในโลก', 'Tech hub ของโลก', 'มหาวิทยาลัยระดับโลก'],
@@ -208,7 +208,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'uk', name: 'United Kingdom', nameTH: 'อังกฤษ', flag: '🇬🇧',
     scores: { costOfLiving: 3, safety: 7, healthcare: 8, education: 9, workLifeBalance: 7, taxFriendliness: 4, immigrationEase: 5, jobMarket: 7, climate: 4, politicalStability: 8 },
-    avgSalaryUSD: 52000, costIndex: 250,
+    avgSalaryUSD: 55000, costIndex: 250,
     hotJobs: ['software', 'data-ai', 'healthcare', 'engineering', 'accounting'],
     visaPaths: ['Skilled Worker', 'Global Talent', 'Youth Mobility'],
     pros: ['ตลาดงานใหญ่', 'NHS universal healthcare', 'Oxford/Cambridge', 'Annual leave 28 วัน'],
@@ -218,7 +218,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'germany', name: 'Germany', nameTH: 'เยอรมนี', flag: '🇩🇪',
     scores: { costOfLiving: 6, safety: 8, healthcare: 9, education: 10, workLifeBalance: 9, taxFriendliness: 3, immigrationEase: 5, jobMarket: 7, climate: 4, politicalStability: 9 },
-    avgSalaryUSD: 55000, costIndex: 200,
+    avgSalaryUSD: 58000, costIndex: 200,
     hotJobs: ['software', 'engineering', 'data-ai', 'healthcare'],
     visaPaths: ['EU Blue Card', 'Job Seeker Visa', 'Skilled Worker'],
     pros: ['มหาวิทยาลัยฟรี! 🆓', 'Work-life ดีมาก', 'กฎหมายแรงงานเข้ม', 'Berlin ค่าครองชีพพอรับได้'],
@@ -228,7 +228,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'japan', name: 'Japan', nameTH: 'ญี่ปุ่น', flag: '🇯🇵',
     scores: { costOfLiving: 6, safety: 10, healthcare: 9, education: 8, workLifeBalance: 4, taxFriendliness: 5, immigrationEase: 4, jobMarket: 6, climate: 6, politicalStability: 9 },
-    avgSalaryUSD: 42000, costIndex: 190,
+    avgSalaryUSD: 45000, costIndex: 190,
     hotJobs: ['software', 'engineering', 'chef'],
     visaPaths: ['Engineer/Specialist', 'Specified Skilled Worker', 'Highly Skilled Professional'],
     pros: ['ปลอดภัยที่สุดในโลก', 'อาหารอร่อยมาก', 'ระบบเป๊ะ', 'ใกล้ไทย 6 ชม.'],
@@ -238,7 +238,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'singapore', name: 'Singapore', nameTH: 'สิงคโปร์', flag: '🇸🇬',
     scores: { costOfLiving: 3, safety: 10, healthcare: 9, education: 9, workLifeBalance: 4, taxFriendliness: 9, immigrationEase: 5, jobMarket: 8, climate: 5, politicalStability: 9 },
-    avgSalaryUSD: 55000, costIndex: 270,
+    avgSalaryUSD: 58000, costIndex: 270,
     hotJobs: ['software', 'data-ai', 'accounting', 'business'],
     visaPaths: ['Employment Pass', 'S Pass', 'EntrePass'],
     pros: ['ภาษีต่ำมาก', 'ปลอดภัยมาก', 'ใกล้ไทย 2 ชม.! ✈️', 'Financial hub'],
@@ -248,7 +248,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'netherlands', name: 'Netherlands', nameTH: 'เนเธอร์แลนด์', flag: '🇳🇱',
     scores: { costOfLiving: 4, safety: 8, healthcare: 9, education: 9, workLifeBalance: 9, taxFriendliness: 4, immigrationEase: 5, jobMarket: 7, climate: 4, politicalStability: 9 },
-    avgSalaryUSD: 52000, costIndex: 220,
+    avgSalaryUSD: 55000, costIndex: 220,
     hotJobs: ['software', 'data-ai', 'engineering', 'business'],
     visaPaths: ['Highly Skilled Migrant', 'DAFT (สำหรับ freelancer)', 'EU Blue Card'],
     pros: ['Work-life balance ดีมาก', 'ปั่นจักรยานทุกที่ 🚲', 'พูดอังกฤษได้ทั่ว', 'เปิดกว้าง'],
@@ -258,7 +258,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'sweden', name: 'Sweden', nameTH: 'สวีเดน', flag: '🇸🇪',
     scores: { costOfLiving: 5, safety: 7, healthcare: 9, education: 10, workLifeBalance: 10, taxFriendliness: 2, immigrationEase: 4, jobMarket: 6, climate: 2, politicalStability: 9 },
-    avgSalaryUSD: 48000, costIndex: 220,
+    avgSalaryUSD: 50000, costIndex: 220,
     hotJobs: ['software', 'engineering', 'healthcare'],
     visaPaths: ['Work Permit', 'EU Blue Card'],
     pros: ['Work-life balance ดีที่สุดในโลก', 'Education ฟรีทุกระดับ', 'Parental leave 480 วัน!', 'สวัสดิการครบ'],
@@ -278,7 +278,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'korea', name: 'South Korea', nameTH: 'เกาหลีใต้', flag: '🇰🇷',
     scores: { costOfLiving: 5, safety: 9, healthcare: 9, education: 8, workLifeBalance: 3, taxFriendliness: 6, immigrationEase: 4, jobMarket: 6, climate: 5, politicalStability: 7 },
-    avgSalaryUSD: 40000, costIndex: 190,
+    avgSalaryUSD: 42000, costIndex: 190,
     hotJobs: ['software', 'engineering', 'creative'],
     visaPaths: ['E-7 Skilled Worker', 'D-10 Job Seeker', 'F-2 Points System'],
     pros: ['ปลอดภัยมาก', 'Healthcare ดีมากราคาถูก', 'Internet เร็วสุดในโลก', 'K-culture 🎵'],
@@ -288,7 +288,7 @@ export const COUNTRIES: Country[] = [
   {
     id: 'ireland', name: 'Ireland', nameTH: 'ไอร์แลนด์', flag: '🇮🇪',
     scores: { costOfLiving: 3, safety: 8, healthcare: 7, education: 8, workLifeBalance: 8, taxFriendliness: 5, immigrationEase: 6, jobMarket: 8, climate: 4, politicalStability: 9 },
-    avgSalaryUSD: 58000, costIndex: 240,
+    avgSalaryUSD: 60000, costIndex: 240,
     hotJobs: ['software', 'data-ai', 'accounting', 'business'],
     visaPaths: ['Critical Skills Permit', 'General Work Permit', 'Stamp 4'],
     pros: ['EU tech hub (Google, Meta, Apple)', 'พูดอังกฤษ', 'เงินเดือนดี', 'ประตูสู่ EU'],

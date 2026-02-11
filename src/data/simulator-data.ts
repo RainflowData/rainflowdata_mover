@@ -1,8 +1,10 @@
 // ===== Migration Life Simulator Data =====
 // ข้อมูลสำหรับจำลองชีวิตหลังย้ายประเทศ
-// อ้างอิง: Numbeo Feb 2026, PayScale, Home Affairs, ATO
+// อ้างอิง: ATO (Jun 2025), Fair Work (Jul 2025), Home Affairs (Jul 2025),
+//         Numbeo (Feb 2026), SEEK (Feb 2026), PayScale (Jan 2026), XE (Feb 2026)
+// อัปเดตล่าสุด: กุมภาพันธ์ 2026
 
-export const AUD_TO_THB = 23.3
+export const AUD_TO_THB = 22.15 // XE mid-market rate Feb 2026
 
 // ===== Australian Tax Brackets FY 2025-26 (Stage 3 Tax Cuts) =====
 export function calculateAusTax(annualGross: number): {
@@ -39,8 +41,9 @@ export function calculateThaiTax(annualGross: number): {
   socialSec: number
   netMonthly: number
 } {
-  // Thai personal income tax brackets 2025
-  const taxable = Math.max(0, annualGross - 150000) // personal allowance + expenses
+  // Thai personal income tax brackets 2025 (Revenue Dept rd.go.th)
+  // Deductions: 100K expense (50% of salary, max 100K) + 60K personal allowance = 160K
+  const taxable = Math.max(0, annualGross - 160000) // employee expense 100K + personal allowance 60K
   let tax = 0
   if (taxable > 5000000) tax = 1265000 + (taxable - 5000000) * 0.35
   else if (taxable > 2000000) tax = 365000 + (taxable - 2000000) * 0.30
@@ -56,23 +59,24 @@ export function calculateThaiTax(annualGross: number): {
 
 // ===== Salary Data (AUD/year) =====
 export const AU_SALARIES: Record<string, { entry: number; mid: number; senior: number; label: string }> = {
-  'software': { entry: 75000, mid: 95000, senior: 130000, label: 'Software Developer' },
-  'data-ai': { entry: 80000, mid: 100000, senior: 140000, label: 'Data / AI Engineer' },
-  'accounting': { entry: 58000, mid: 78000, senior: 105000, label: 'Accountant' },
-  'engineering': { entry: 70000, mid: 90000, senior: 120000, label: 'Engineer' },
-  'healthcare': { entry: 65000, mid: 82000, senior: 100000, label: 'Nurse / Healthcare' },
-  'chef': { entry: 52000, mid: 62000, senior: 78000, label: 'Chef / Hospitality' },
-  'trades': { entry: 55000, mid: 72000, senior: 95000, label: 'Trades (ช่าง)' },
-  'other': { entry: 55000, mid: 70000, senior: 90000, label: 'Other' },
+  // อ้างอิง: SEEK salary data Feb 2026, PayScale AU Jan 2026
+  'software': { entry: 70000, mid: 100000, senior: 140000, label: 'Software Developer' },
+  'data-ai': { entry: 90000, mid: 120000, senior: 150000, label: 'Data / AI Engineer' },
+  'accounting': { entry: 65000, mid: 85000, senior: 115000, label: 'Accountant' },
+  'engineering': { entry: 80000, mid: 100000, senior: 130000, label: 'Engineer' },
+  'healthcare': { entry: 75000, mid: 90000, senior: 105000, label: 'Nurse / Healthcare' },
+  'chef': { entry: 60000, mid: 75000, senior: 93000, label: 'Chef / Hospitality' },
+  'trades': { entry: 85000, mid: 100000, senior: 130000, label: 'Trades (ช่าง)' },
+  'other': { entry: 60000, mid: 75000, senior: 95000, label: 'Other' },
 }
 
-// Unskilled / Working Holiday salary
-export const AU_UNSKILLED_SALARY = 48000 // ~$23.23/hr min wage × 38hrs × 52wks + casual loading
+// Unskilled / Working Holiday salary (Fair Work Jul 2025)
+export const AU_UNSKILLED_SALARY = 49300 // $24.95/hr national minimum wage × 38hrs × 52wks
 
 // Thai salaries for comparison (THB/year)
 export const TH_SALARIES: Record<string, number> = {
   'software': 720000,    // 60K/month
-  'data-ai': 780000,     // 65K/month
+  'data-ai': 660000,     // 55K/month (PayScale avg ~43-55K, mid-senior level)
   'accounting': 420000,  // 35K/month
   'engineering': 540000, // 45K/month
   'healthcare': 360000,  // 30K/month
@@ -110,17 +114,17 @@ export const AU_CITIES: Record<string, CityInfo> = {
   'sydney': {
     id: 'sydney', name: 'Sydney', label: '🏙️ Sydney',
     rent1br: 3440, rent2br: 4800, rentFamily: 6800, rentShare: 1400,
-    utilities: 294, internet: 70,
+    utilities: 294, internet: 80,
   },
   'melbourne': {
     id: 'melbourne', name: 'Melbourne', label: '🎭 Melbourne',
     rent1br: 2460, rent2br: 3440, rentFamily: 4750, rentShare: 1100,
-    utilities: 291, internet: 70,
+    utilities: 291, internet: 80,
   },
   'brisbane': {
     id: 'brisbane', name: 'Brisbane', label: '☀️ Brisbane',
-    rent1br: 2200, rent2br: 3000, rentFamily: 4000, rentShare: 950,
-    utilities: 250, internet: 70,
+    rent1br: 2600, rent2br: 3500, rentFamily: 4400, rentShare: 1050,
+    utilities: 280, internet: 80,
   },
 }
 
@@ -152,7 +156,8 @@ export const SAVINGS_RANGES: Record<string, { min: number; max: number; label: s
 export function calculateInitialCosts(family: string, rent: number): {
   visa: number; flight: number; bond: number; furniture: number; docs: number; total: number
 } {
-  const visa = family === 'family' ? 8200 : family === 'couple' ? 6100 : 4640
+  // Home Affairs visa pricing Jul 2025 — subclass 189 base $4,910 + additional applicants
+  const visa = family === 'family' ? 9825 : family === 'couple' ? 7365 : 4910
   const flight = family === 'family' ? 3500 : family === 'couple' ? 2200 : 1100
   const bond = rent // 4 weeks bond ≈ 1 month
   const furniture = family === 'single' ? 2000 : 4000
@@ -223,7 +228,7 @@ const COUNTRY_NAMES: Record<string, { name: string; flag: string }> = {
 
 const COUNTRY_REASONS: Record<string, Record<string, string>> = {
   'australia': {
-    'savings': 'เงินเดือนสูงมาก IT เริ่มต้น 75K AUD+ เก็บเงินได้เยอะ',
+    'savings': 'เงินเดือนสูงมาก IT เริ่มต้น 70K AUD+ เก็บเงินได้เยอะ',
     'weather': 'อากาศดีมาก โดยเฉพาะ Brisbane/Sydney ☀️',
     'career': 'ตลาด IT/Data demand สูงมากๆ Skill shortage list ยาวเป็นหางว่าว',
     'safety': 'ปลอดภัยมาก ระบบกฎหมายเข้มแข็ง',
