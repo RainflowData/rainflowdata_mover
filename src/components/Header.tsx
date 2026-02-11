@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
 export function Header() {
   return (
@@ -17,13 +17,13 @@ export function Header() {
           className="rounded-full flex-shrink-0 overflow-hidden animate-logo-float"
           style={{ width: '56px', height: '56px', boxShadow: '0 4px 15px rgba(0,0,0,0.15)' }}
         >
-          <Image
-            src="/rainflow.png"
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`${basePath}/rainflow.png`}
             alt="Rainflow Logo"
             width={56}
             height={56}
-            style={{ objectFit: 'cover' }}
-            unoptimized
+            style={{ objectFit: 'cover', width: '56px', height: '56px' }}
           />
         </div>
         <div className="min-w-0">

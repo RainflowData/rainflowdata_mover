@@ -30,6 +30,7 @@ jobs:
       - name: Build
         env:
           REPO_NAME: ${{ github.event.repository.name }}
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
         run: npm run build
 
       - name: Add .nojekyll
