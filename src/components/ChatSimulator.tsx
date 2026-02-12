@@ -1023,10 +1023,15 @@ export function ChatSimulator() {
             </div>
           </div>
 
-          {/* Link to Visa Calculator */}
-          <a href={`${basePath}/tools`} className="block mt-3 mb-1 py-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-center text-sm text-blue-700 font-medium hover:shadow-md transition-all">
-            🇦🇺 ต้องการคำนวณคะแนนวีซ่าและงบละเอียด? → ไปเครื่องคำนวณวีซ่า
-          </a>
+          {/* Links to other tabs */}
+          <div className="flex flex-col sm:flex-row gap-2 mt-3 mb-1">
+            <a href={`${basePath}/sim`} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 text-center text-sm text-green-700 font-medium hover:shadow-md transition-all">
+              🇦🇺 จำลองชีวิตในออส →
+            </a>
+            <a href={`${basePath}/visa`} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 text-center text-sm text-orange-700 font-medium hover:shadow-md transition-all">
+              📋 ดูวีซ่า & เส้นทาง →
+            </a>
+          </div>
 
           <button onClick={restart} className="w-full mt-2 mb-4 py-3 rounded-xl border-2 border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-medium">
             🔄 ลองใหม่ เปลี่ยนคำตอบ
@@ -1440,7 +1445,7 @@ export function ChatSimulator() {
                 </div>
               </div>
               <div className="mt-2 text-xs text-gray-500">
-                <a href={`${basePath}/tools`} className="text-blue-600 underline font-medium">→ คำนวณคะแนนละเอียดทุกหมวด + ดูวีซ่าทั้งหมด</a>
+                <a href={`${basePath}/visa`} className="text-blue-600 underline font-medium">→ ดูวีซ่าทั้งหมด + เปรียบเทียบเส้นทาง</a>
               </div>
             </div>
 
@@ -1475,8 +1480,8 @@ export function ChatSimulator() {
             </div>
 
             {/* Link to detailed calculator */}
-            <a href={`${basePath}/tools`} className="block mt-3 py-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-center text-sm text-blue-700 font-medium hover:shadow-md transition-all">
-              📊 คำนวณคะแนนวีซ่าละเอียดทุกหมวด (11 หมวด) → ไปเครื่องคำนวณเต็ม
+            <a href={`${basePath}/visa`} className="block mt-3 py-3 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 text-center text-sm text-orange-700 font-medium hover:shadow-md transition-all">
+              📋 ดูวีซ่าทั้งหมด & เปรียบเทียบเส้นทาง →
             </a>
 
             <div className="flex gap-2 mt-3 mb-4">

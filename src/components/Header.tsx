@@ -6,7 +6,16 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
 export function Header() {
   const pathname = usePathname()
-  const isTools = pathname?.includes('/tools')
+  const current = pathname?.includes('/visa') ? 'visa'
+    : pathname?.includes('/sim') ? 'sim'
+    : pathname?.includes('/tools') ? 'tools'
+    : 'home'
+
+  const tabs = [
+    { id: 'home', href: `${basePath}/`, label: '🌍 เลือกประเทศ' },
+    { id: 'sim', href: `${basePath}/sim`, label: '🇦🇺 จำลองชีวิต' },
+    { id: 'visa', href: `${basePath}/visa`, label: '📋 วีซ่า & เส้นทาง' },
+  ]
 
   return (
     <header className="mb-4 animate-fade-in">
@@ -41,28 +50,24 @@ export function Header() {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex gap-2 mt-3">
-        <a
-          href={`${basePath}/`}
-          className={`flex-1 text-center py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${
-            !isTools
-              ? 'bg-white text-blue-700 shadow-md border-2 border-blue-200'
-              : 'bg-white/50 text-gray-500 hover:bg-white/70 hover:text-blue-600 border-2 border-transparent'
-          }`}
-        >
-          💬 Smart Country Matcher
-        </a>
-        <a
-          href={`${basePath}/tools`}
-          className={`flex-1 text-center py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${
-            isTools
-              ? 'bg-white text-blue-700 shadow-md border-2 border-blue-200'
-              : 'bg-white/50 text-gray-500 hover:bg-white/70 hover:text-blue-600 border-2 border-transparent'
-          }`}
-        >
-          🇦🇺 คำนวณวีซ่า & งบ
-        </a>
+      {/* Navigation Tabs — 3 tabs */}
+      <div className="flex gap-1.5 mt-3">
+        {tabs.map(tab => {
+          const isActive = current === tab.id || (current === 'tools' && tab.id === 'visa')
+          return (
+            <a
+              key={tab.id}
+              href={tab.href}
+              className={`flex-1 text-center py-2 px-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-white text-blue-700 shadow-md border-2 border-blue-200'
+                  : 'bg-white/50 text-gray-500 hover:bg-white/70 hover:text-blue-600 border-2 border-transparent'
+              }`}
+            >
+              {tab.label}
+            </a>
+          )
+        })}
       </div>
     </header>
   )
