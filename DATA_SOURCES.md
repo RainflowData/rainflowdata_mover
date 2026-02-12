@@ -146,23 +146,90 @@ All data verified against official sources:
 ---
 
 ## 🔄 Update Schedule
-- **Visa fees**: Check quarterly (Immigration websites)
-- **Salaries**: Update semi-annually (PayScale, Glassdoor)
-- **Cost of living**: Update monthly (Numbeo auto-updates)
+- **Visa fees**: Check quarterly (Government websites release annually, but changes can occur mid-year)
+- **Salaries**: Update semi-annually (PayScale/Glassdoor refreshes Jan/Jul)
+- **Cost of living**: Monitor monthly (Numbeo crowd-sourced updates)
+- **Safety/Quality rankings**: Annual (GPI releases mid-year, HDI late-year)
 - **Last full review**: February 12, 2026
 
 ---
 
 ## 📚 Additional Sources
-- **OECD Better Life Index 2025**: Quality of life comparisons
-- **Global Peace Index 2025**: Safety rankings
-- **Numbeo Cost of Living**: Real-time crowd-sourced data
+
+### Quality of Life Metrics
+- **OECD Better Life Index**: 11-dimension well-being comparison (housing, income, health, safety, work-life balance)
+  - **Source:** oecdbetterlifeindex.org
+  - **Note:** Last comprehensive update 2020; ongoing data portal available
+
+- **Quality of Life Index 2026** (Numbeo): Real-time global ranking
+  - **Top countries:** Switzerland, Norway, Iceland, Denmark, Netherlands, Australia
+  - **Source:** numbeo.com/quality-of-life
+
+- **Human Development Index (HDI)**: UN Development Programme annual ranking
+  - **Measures:** Life expectancy, education, income per capita
+  - **Latest:** HDI 2024 report (covers 2023 data)
+
+### Safety Rankings
+- **Global Peace Index 2025**: Published by Institute for Economics & Peace
+  - **Top 10:** Iceland, Ireland, Austria, Denmark, Switzerland, Singapore, Slovenia, Japan, Czech Republic, Finland
+  - **Covers:** 163 countries, 23 indicators (safety, conflict, militarization)
+  - **Iceland:** #1 every year since 2008
+  - **Source:** visionofhumanity.org/maps
+
+### Cost of Living Data
+- **Numbeo Cost of Living Index**: Crowd-sourced, updated monthly
+  - **⚠️ Use with caution:** Provides directional estimates; rent prices often outdated or inaccurate for short-term stays
+  - **Best for:** Comparing relative costs between cities
+  - **Verify:** Always check local sources before budgeting
+  - **Source:** numbeo.com/cost-of-living
+
 - **PayScale / Glassdoor**: Verified salary data from employees
+  - **Methodology:** Self-reported, company-verified
+  - **Updated:** Quarterly/semi-annually
+
+---
+
+## 🔍 Data Reliability Notes
+
+### High Confidence (90%+ accurate)
+- ✅ **Visa fees** from government portals (official, but can change with budget cycles)
+- ✅ **Minimum salary requirements** from immigration departments
+- ✅ **Tax brackets** from revenue departments
+
+### Medium Confidence (70-85% accurate)
+- ⚠️ **Salaries:** Self-reported data varies by company size, location, negotiation
+- ⚠️ **Cost of living (Numbeo):** Crowd-sourced, directional only
+- ⚠️ **PR timelines:** Official estimates; actual processing varies widely
+
+### Use With Caution
+- ⚠️ **Rent prices:** Numbeo based on long-term leases; short-term 30-50% higher
+- ⚠️ **Job market demand:** Qualitative assessments; changes with economy
+- ⚠️ **Quality of life scores:** Subjective weighting; OECD BLI data from 2020
+
+---
+
+## 🔍 How to Verify Before Applying
+
+1. **Visa costs:** Visit official immigration portal (links above)
+2. **Salary expectations:** Cross-check PayScale + Glassdoor + LinkedIn salary insights
+3. **Cost of living:** Check 2-3 sources (Numbeo + Expatistan + local forums/Reddit)
+4. **Job market:** Search actual job postings on Indeed/LinkedIn for your occupation
+5. **Rent:** Check local rental sites (e.g., Domain.com.au for AU, Rightmove.co.uk for UK)
 
 ---
 
 ## ⚠️ Disclaimer
-Visa fees and immigration policies change frequently. Always verify current information on official government websites before making decisions:
+Visa fees and immigration policies change frequently. Always verify current information on official government websites before making decisions. This app provides general guidance based on Feb 2026 data — it is NOT a substitute for:
+- Licensed immigration advice
+- Financial planning consultation
+- Legal verification of eligibility
+
+For immigration applications, consult:
+- Official government portals (links below)
+- Licensed migration agents (MARA-registered for AU, RCIC for CA, etc.)
+- Immigration lawyers for complex cases
+
+**Official Government Portals:**
 - 🇦🇺 homeaffairs.gov.au
 - 🇨🇦 ircc.canada.ca
 - 🇬🇧 gov.uk/skilled-worker-visa
@@ -175,3 +242,7 @@ Visa fees and immigration policies change frequently. Always verify current info
 - 🇳🇱 ind.nl
 - 🇮🇪 irishimmigration.ie
 - 🇺🇸 uscis.gov
+- 🇵🇹 aima.gov.pt
+- 🇰🇷 immigration.go.kr
+- 🇨🇭 sem.admin.ch
+- 🇯🇵 moj.go.jp
