@@ -166,7 +166,7 @@ export const COUNTRIES: Country[] = [
     scores: { costOfLiving: 4, safety: 8, healthcare: 9, education: 9, workLifeBalance: 8, taxFriendliness: 5, immigrationEase: 7, jobMarket: 8, climate: 8, politicalStability: 9 },
     avgSalaryUSD: 68000, costIndex: 160,
     hotJobs: ['software', 'data-ai', 'engineering', 'healthcare', 'trades', 'chef', 'accounting'],
-    visaPaths: ['Skilled 189/190', 'Regional 491', 'Employer 482', 'WHV 417'],
+    visaPaths: ['Skilled 189/190', 'Regional 491', 'Employer 482', 'WHV 462 (ไทย: first-come, no quota)'],
     pros: ['เงินเดือนสูงมาก', 'Medicare ฟรี', 'อากาศดี', 'Skill list ยาว', 'มีคนไทยเยอะ'],
     cons: ['ค่าครองชีพสูง (Sydney)', 'ห่างจากไทย ~9 ชม.'],
     thaiCommunity: 'large',
