@@ -1388,7 +1388,7 @@ export function ChatSimulator() {
 
             {/* Visa Score */}
             <div className="result-section">
-              <h4 className="text-base font-bold text-gray-800 mb-2">📋 คะแนนวีซ่า (เบื้องต้น)</h4>
+              <h4 className="text-base font-bold text-gray-800 mb-2">📋 คะแนนวีซ่า Skilled Migration (เบื้องต้น)</h4>
               <div className={`p-3 rounded-lg ${visa.score >= 65 ? 'bg-green-50 border border-green-200' : visa.score >= 50 ? 'bg-yellow-50 border border-yellow-200' : 'bg-red-50 border border-red-200'}`}>
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">คะแนนรวม</span>
@@ -1400,7 +1400,47 @@ export function ChatSimulator() {
                 <div className="text-xs text-gray-400 mt-2">* ยังไม่รวม Partner/เรียนใน AU/NAATI</div>
                 {visa.score >= 65 ? <div className="text-sm text-green-700 font-semibold mt-2">✅ ผ่าน 65! สมัคร 189/190 ได้</div>
                   : visa.score >= 50 ? <div className="text-sm text-yellow-700 font-semibold mt-2">⚠️ ลอง 491 Regional (+15) = {visa.score + 15}</div>
-                  : <div className="text-sm text-red-700 font-semibold mt-2">❌ คะแนนต่ำ ลองเพิ่ม English/ประสบการณ์</div>}
+                  : <div className="text-sm text-red-700 font-semibold mt-2">❌ คะแนน Skilled ต่ำ — แต่ยังมีทางอื่น! ดูด้านล่าง 👇</div>}
+              </div>
+            </div>
+
+            {/* Non-points visa pathways */}
+            <div className="result-section" style={{ background: 'linear-gradient(135deg, #F0FDF4, #ECFDF5)', borderColor: '#86EFAC' }}>
+              <h4 className="text-base font-bold text-gray-800 mb-2">🎫 เส้นทางอื่นที่ไม่ต้องใช้คะแนน</h4>
+              <div className="text-sm text-gray-700 space-y-3">
+                <div className="p-2 bg-white/80 rounded-lg">
+                  <div className="font-semibold text-green-700">💼 Employer Sponsored (482/186)</div>
+                  <div className="text-xs text-gray-600">หานายจ้าง AU sponsor ให้ ไม่ต้องมีคะแนน ทำ 2-3 ปี → PR ได้</div>
+                  <div className="text-xs text-gray-400">ค่าวีซ่า ~$3,035</div>
+                </div>
+                <div className="p-2 bg-white/80 rounded-lg">
+                  <div className="font-semibold text-blue-700">🎓 Student → Graduate (500 → 485)</div>
+                  <div className="text-xs text-gray-600">เรียนที่ AU → จบได้ work visa 2-4 ปี → หางาน → apply PR</div>
+                  <div className="text-xs text-gray-400">ค่าวีซ่า $1,600 + ค่าเทอม $20,000-50,000/ปี</div>
+                </div>
+                {(() => {
+                  const ageN = quickProfile.age === '18-24' ? 21 : quickProfile.age === '25-32' ? 28 : 36
+                  return ageN <= 30 ? (
+                    <div className="p-2 bg-white/80 rounded-lg border-2 border-orange-200">
+                      <div className="font-semibold text-orange-700">🏖️ Working Holiday (462) — คุณมีสิทธิ์!</div>
+                      <div className="text-xs text-gray-600">ไทยมีข้อตกลงกับ AU! อายุ 18-30 ไปทำงาน+เที่ยว 12 เดือน ต่อได้ถึง 3 ปี</div>
+                      <div className="text-xs text-gray-400">ค่าวีซ่า $640 เท่านั้น!</div>
+                    </div>
+                  ) : (
+                    <div className="p-2 bg-white/80 rounded-lg opacity-60">
+                      <div className="font-semibold text-orange-700">🏖️ Working Holiday (462)</div>
+                      <div className="text-xs text-gray-500">สำหรับอายุ 18-30 ปี (ไม่ตรงเงื่อนไขอายุของคุณ)</div>
+                    </div>
+                  )
+                })()}
+                <div className="p-2 bg-white/80 rounded-lg">
+                  <div className="font-semibold text-pink-700">💑 Partner Visa (309/820)</div>
+                  <div className="text-xs text-gray-600">มีคู่สมรส/แฟนเป็น AU citizen/PR → สมัครได้เลย → PR ภายใน 2 ปี</div>
+                  <div className="text-xs text-gray-400">ค่าวีซ่า $9,095 (แพงที่สุด)</div>
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                <a href={`${basePath}/tools`} className="text-blue-600 underline font-medium">→ คำนวณคะแนนละเอียดทุกหมวด + ดูวีซ่าทั้งหมด</a>
               </div>
             </div>
 

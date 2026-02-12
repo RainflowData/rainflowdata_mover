@@ -71,6 +71,9 @@ export interface VisaOption {
   description: string
   pathToPR: string
   timeline: string
+  category: 'skilled' | 'study' | 'work' | 'partner' | 'other'
+  cost?: string
+  eligible?: boolean  // whether user likely qualifies based on profile
 }
 
 // ===== Calculation Results =====

@@ -164,17 +164,21 @@ export function calculateFeasibility(
     warnings.push('วุฒิ Trade/Diploma ได้ 10 คะแนน — พิจารณาวีซ่า Trades ที่มี cut-off ต่ำกว่า')
   }
 
-  // Visa options
+  // Visa options — categorized into skilled (points-based) and non-points pathways
   const visaOptions: VisaOption[] = []
 
+  // ===== POINTS-BASED SKILLED VISAS =====
   if (totalScore >= 65) {
     visaOptions.push({
       type: 'Subclass 189',
       name: 'Skilled Independent Visa',
+      category: 'skilled',
       difficulty: totalScore >= 85 ? 'medium' : 'very-hard',
       description: 'ไม่ต้อง sponsor สมัครเองได้ แต่แข่งสูงมาก (cut-off 85-95+ คะแนน ในปี 2025-26)',
       pathToPR: 'ได้ PR ทันที',
       timeline: '12-18 เดือน',
+      cost: '$4,640 (หลัก) + $2,725 (คู่สมรส)',
+      eligible: totalScore >= 65,
     })
   }
 
@@ -182,10 +186,13 @@ export function calculateFeasibility(
     visaOptions.push({
       type: 'Subclass 190',
       name: 'Skilled Nominated Visa',
+      category: 'skilled',
       difficulty: 'medium',
       description: 'ต้องได้ nomination จาก state (NSW/VIC/QLD) +5 คะแนน → รวมแล้ว ' + (totalScore + 5) + ' คะแนน',
       pathToPR: 'ได้ PR ทันที แต่ต้องอยู่ state นั้น 2 ปี',
       timeline: '12-18 เดือน',
+      cost: '$4,640 (หลัก)',
+      eligible: true,
     })
   }
 
@@ -193,29 +200,108 @@ export function calculateFeasibility(
     visaOptions.push({
       type: 'Subclass 491',
       name: 'Skilled Work Regional Visa',
+      category: 'skilled',
       difficulty: 'easy',
       description: 'Regional nomination +15 คะแนน → รวมแล้ว ' + (totalScore + 15) + ' คะแนน (ต้องอยู่ regional 3 ปี)',
       pathToPR: 'หลัง 3 ปีสมัคร 191 เป็น PR',
       timeline: '8-12 เดือน',
+      cost: '$4,640 (หลัก)',
+      eligible: true,
     })
   }
 
+  // ===== EMPLOYER SPONSORED =====
   visaOptions.push({
     type: 'Subclass 482',
     name: 'Temporary Skill Shortage (TSS)',
+    category: 'work',
     difficulty: 'easy',
-    description: 'ต้องมี employer sponsor ก่อน (หางานจากไทย หรือไปหาที่นั่น)',
-    pathToPR: 'ทำ 3 ปี → สมัคร 186 (Employer Nomination) ได้',
+    description: 'ต้องมี employer sponsor ก่อน ไม่ต้องใช้คะแนน ต้องมีประสบการณ์ 2 ปี+',
+    pathToPR: 'ทำ 2-3 ปี → สมัคร 186 (Employer Nomination) ได้ PR',
     timeline: '3-6 เดือน (ถ้ามี job offer)',
+    cost: '$3,035 (หลัก)',
+    eligible: true,
+  })
+
+  visaOptions.push({
+    type: 'Subclass 186',
+    name: 'Employer Nomination Scheme (ENS)',
+    category: 'work',
+    difficulty: 'medium',
+    description: 'นายจ้าง AU nominate ให้ ต้องทำงานกับนายจ้างนั้น 2-3 ปี หรือมี 3 ปีประสบการณ์',
+    pathToPR: 'ได้ PR ทันที (Direct Entry stream)',
+    timeline: '6-12 เดือน',
+    cost: '$4,640 (หลัก)',
+    eligible: true,
+  })
+
+  // ===== STUDENT PATHWAY =====
+  visaOptions.push({
+    type: 'Subclass 500',
+    name: 'Student Visa',
+    category: 'study',
+    difficulty: 'easy',
+    description: 'เรียนที่ AU (TAFE, Uni, VET) ทำงานได้ 48 ชม./2 สัปดาห์ ระหว่างเรียน ต้องมี CoE + GTE + เงินเพียงพอ',
+    pathToPR: 'ไม่ได้โดยตรง → จบแล้วสมัคร 485 → แล้วไป 189/190/482',
+    timeline: 'ได้เร็ว 1-3 เดือน',
+    cost: '$1,600 (ค่าวีซ่า) + ค่าเทอม $20,000-50,000/ปี',
+    eligible: true,
   })
 
   visaOptions.push({
     type: 'Subclass 485',
-    name: 'Post-Study Work Visa',
+    name: 'Temporary Graduate Visa',
+    category: 'study',
     difficulty: 'easy',
-    description: 'เรียน Master/PhD ใน Australia ก่อน → จบได้ work visa 2-4 ปี',
+    description: 'จบ ป.ตรี+ จาก AU ได้ work visa: ป.ตรี 2 ปี, ป.โท 3 ปี, ป.เอก 4 ปี ทำงานได้เต็มเวลา',
     pathToPR: 'ใช้เวลาหางาน → apply 482/189/190 ภายหลัง',
-    timeline: '2-3 ปี (รวมเรียน)',
+    timeline: 'จบแล้วสมัครได้เลย',
+    cost: '$1,895 (หลัก)',
+    eligible: australianStudy,
+  })
+
+  // ===== WORKING HOLIDAY =====
+  // Thailand มีข้อตกลง Work and Holiday (462) กับ Australia
+  const ageNum = age === '18-24' ? 21 : age === '25-32' ? 28 : age === '33-39' ? 36 : age === '40-44' ? 42 : 50
+  const whvEligible = ageNum >= 18 && ageNum <= 30
+
+  visaOptions.push({
+    type: 'Subclass 462',
+    name: 'Work and Holiday Visa',
+    category: 'other',
+    difficulty: whvEligible ? 'easy' : 'very-hard',
+    description: whvEligible
+      ? 'ไทยมีข้อตกลงกับ AU! อายุ 18-30 ปี ไปทำงาน+ท่องเที่ยว 12 เดือน ทำงานได้เต็มเวลา ต่อได้ถึง 3 ปี'
+      : 'สำหรับอายุ 18-30 ปีเท่านั้น (ไม่ตรงเงื่อนไขอายุของคุณ)',
+    pathToPR: 'ไม่ได้โดยตรง แต่ใช้หาประสบการณ์ → เปลี่ยน 482/employer sponsor',
+    timeline: '1-3 เดือน',
+    cost: '$640 (ค่าวีซ่า)',
+    eligible: whvEligible,
+  })
+
+  // ===== PARTNER/FAMILY =====
+  visaOptions.push({
+    type: 'Subclass 309/100',
+    name: 'Partner Visa (Offshore)',
+    category: 'partner',
+    difficulty: 'medium',
+    description: 'มีคู่สมรส/แฟนเป็น AU citizen/PR สมัครจากนอก AU → ได้ temporary แล้วรอ permanent',
+    pathToPR: '309 (temp) → 100 (permanent) ภายใน 2 ปี',
+    timeline: '12-24 เดือน',
+    cost: '$9,095 (หลัก — แพงที่สุด)',
+    eligible: partnerStatus === 'au-citizen-pr',
+  })
+
+  visaOptions.push({
+    type: 'Subclass 820/801',
+    name: 'Partner Visa (Onshore)',
+    category: 'partner',
+    difficulty: 'medium',
+    description: 'เหมือน 309/100 แต่สมัครในขณะที่อยู่ AU แล้ว ได้ bridging visa ระหว่างรอ',
+    pathToPR: '820 (temp) → 801 (permanent) ภายใน 2 ปี',
+    timeline: '12-24 เดือน',
+    cost: '$9,095 (หลัก)',
+    eligible: partnerStatus === 'au-citizen-pr',
   })
 
   return { feasible, score: totalScore, pointsBreakdown, visaOptions, warnings }
