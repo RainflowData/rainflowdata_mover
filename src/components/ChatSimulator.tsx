@@ -19,6 +19,8 @@ import {
   type ChatMessage, type GatheredData,
 } from '@/lib/groq'
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+
 // ===== TYPES =====
 type Phase = 'welcome' | 'quiz' | 'aiChat' | 'analyzing' | 'countryResults' | 'auProfile' | 'sim' | 'result'
 
@@ -1002,12 +1004,31 @@ export function ChatSimulator() {
             </div>
           )}
 
-          <div className="text-center text-xs text-gray-400 mt-4 space-y-1">
-            <div>📊 อ้างอิง: OECD Better Life Index, Numbeo, Global Peace Index, WHO 2025</div>
-            <div>⚠️ เป็นการประมาณเบื้องต้น ผลจริงขึ้นกับสถานการณ์ส่วนตัว</div>
+          {/* Data Sources & Disclaimer */}
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <div className="text-xs text-blue-700 font-medium mb-1">📊 แหล่งข้อมูลที่ใช้วิเคราะห์:</div>
+            <div className="text-xs text-blue-600 space-y-0.5">
+              <div>• OECD Better Life Index 2024 — คุณภาพชีวิต ความปลอดภัย</div>
+              <div>• Numbeo Cost of Living Index 2025 — ค่าครองชีพ เปรียบเทียบเมือง</div>
+              <div>• Global Peace Index 2024 — ความปลอดภัย</div>
+              <div>• UNDP Human Development Report 2024 — ดัชนีพัฒนามนุษย์</div>
+              <div>• IMF World Economic Outlook 2025 — GDP, เศรษฐกิจ</div>
+            </div>
+          </div>
+          <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <div className="text-xs text-amber-700">
+              ⚠️ <strong>ข้อจำกัดความรับผิดชอบ:</strong> ข้อมูลเป็นการประมาณจากแหล่งข้อมูลที่น่าเชื่อถือ
+              ไม่ใช่คำแนะนำอย่างเป็นทางการ ผลจริงขึ้นกับสถานการณ์ส่วนตัว
+              กรุณาตรวจสอบจากเว็บไซต์ทางการของแต่ละประเทศก่อนตัดสินใจ
+            </div>
           </div>
 
-          <button onClick={restart} className="w-full mt-4 mb-4 py-3 rounded-xl border-2 border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-medium">
+          {/* Link to Visa Calculator */}
+          <a href={`${basePath}/tools`} className="block mt-3 mb-1 py-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-center text-sm text-blue-700 font-medium hover:shadow-md transition-all">
+            🇦🇺 ต้องการคำนวณคะแนนวีซ่าและงบละเอียด? → ไปเครื่องคำนวณวีซ่า
+          </a>
+
+          <button onClick={restart} className="w-full mt-2 mb-4 py-3 rounded-xl border-2 border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-medium">
             🔄 ลองใหม่ เปลี่ยนคำตอบ
           </button>
 
@@ -1394,10 +1415,29 @@ export function ChatSimulator() {
               </div>
             </div>
 
-            <div className="text-center text-xs text-gray-400 mt-4 space-y-1">
-              <div>⚠️ ตัวเลขเป็นการประมาณ ผลจริงอาจแตกต่าง</div>
-              <div>📊 อ้างอิง: Home Affairs, ATO FY25-26, Numbeo, PayScale Feb 2026</div>
+            {/* Detailed Sources */}
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-3">
+              <div className="text-xs text-blue-700 font-medium mb-1">📊 แหล่งข้อมูลที่ใช้คำนวณ:</div>
+              <div className="text-xs text-blue-600 space-y-0.5">
+                <div>• <a href="https://immi.homeaffairs.gov.au/visas/working-in-australia/skillselect" target="_blank" rel="noopener noreferrer" className="underline">Home Affairs SkillSelect</a> — เกณฑ์วีซ่า ค่าธรรมเนียม</div>
+                <div>• <a href="https://www.ato.gov.au/tax-rates-and-codes/tax-rates-resident" target="_blank" rel="noopener noreferrer" className="underline">ATO Tax Rates FY 2025-26</a> — อัตราภาษี Stage 3 Tax Cuts</div>
+                <div>• <a href="https://www.numbeo.com/cost-of-living/country_result.jsp?country=Australia" target="_blank" rel="noopener noreferrer" className="underline">Numbeo</a> — ค่าเช่า ค่าครองชีพ แต่ละเมือง</div>
+                <div>• <a href="https://www.fairwork.gov.au/pay-and-wages/minimum-wages" target="_blank" rel="noopener noreferrer" className="underline">Fair Work Ombudsman</a> — ค่าแรงขั้นต่ำ $24.10/hr</div>
+                <div>• <a href="https://www.seek.com.au/career-advice/role" target="_blank" rel="noopener noreferrer" className="underline">SEEK Salary Guide</a> — เงินเดือนตามอาชีพ</div>
+              </div>
             </div>
+            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+              <div className="text-xs text-amber-700">
+                ⚠️ <strong>ข้อจำกัดความรับผิดชอบ:</strong> ตัวเลขเป็นการประมาณเบื้องต้น ผลจริงอาจแตกต่างจากนี้
+                อัตราแลกเปลี่ยนผันผวนได้ ควรเช็คจาก <a href="https://www.xe.com/currencyconverter/convert/?Amount=1&From=AUD&To=THB" target="_blank" rel="noopener noreferrer" className="underline font-medium">XE.com</a> ก่อนใช้จริง
+                กรุณาปรึกษา Migration Agent ที่ได้รับอนุญาตก่อนยื่นวีซ่าจริง
+              </div>
+            </div>
+
+            {/* Link to detailed calculator */}
+            <a href={`${basePath}/tools`} className="block mt-3 py-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 text-center text-sm text-blue-700 font-medium hover:shadow-md transition-all">
+              📊 คำนวณคะแนนวีซ่าละเอียดทุกหมวด (11 หมวด) → ไปเครื่องคำนวณเต็ม
+            </a>
 
             <div className="flex gap-2 mt-3 mb-4">
               <button onClick={() => setPhase('countryResults')} className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-medium">
