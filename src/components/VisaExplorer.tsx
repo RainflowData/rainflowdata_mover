@@ -9,12 +9,28 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 /* ═══════════════════════════════════════════════════════════
    Points Calculator
    ═══════════════════════════════════════════════════════════ */
-function calcPoints(age: string, english: string, exp: string, edu: string) {
+function calcPoints(
+  age: string, english: string, exp: string, edu: string,
+  auExp = '0', partnerSkills = 'none',
+  australianStudy = false, stemQualification = false, professionalYear = false,
+  naatiCertified = false, regionalStudy = false
+) {
   const a: Record<string, number> = { '18-24': 25, '25-32': 30, '33-39': 25, '40-44': 15, '45+': 0 }
   const e: Record<string, number> = { superior: 20, proficient: 10, competent: 0 }
-  const x: Record<string, number> = { '8+': 15, '5-7': 10, '3-4': 5, '0-2': 0 }
+  const overseas: Record<string, number> = { '8+': 15, '5-7': 10, '3-4': 5, '0-2': 0 }
+  const australian: Record<string, number> = { '8': 20, '5': 15, '3': 10, '1': 5, '0': 0 }
   const d: Record<string, number> = { phd: 20, masters: 15, bachelor: 15, trade: 10, highschool: 0 }
-  return (a[age] || 0) + (e[english] || 0) + (x[exp] || 0) + (d[edu] || 0)
+  const p: Record<string, number> = { 'has-skills': 10, 'has-english': 5, 'au-citizen-pr': 10, 'none': 0 }
+  
+  // Work experience cap: max 20 combined (official Home Affairs rule)
+  const overseasPts = overseas[exp] || 0
+  const auPts = australian[auExp] || 0
+  const workExpPts = Math.min(overseasPts + auPts, 20)
+  
+  return (a[age] || 0) + (e[english] || 0) + workExpPts + (d[edu] || 0) +
+    (p[partnerSkills] || 0) +
+    (australianStudy ? 5 : 0) + (stemQualification ? 10 : 0) +
+    (professionalYear ? 5 : 0) + (naatiCertified ? 5 : 0) + (regionalStudy ? 5 : 0)
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -32,11 +48,22 @@ interface Profile {
   location: string
   studyLevel: string
   occupationKey: string // key from occupations.ts
+  // Points-relevant fields (experienced path)
+  auExperience: string
+  partnerSkills: string
+  australianStudy: boolean
+  stemQualification: boolean
+  professionalYear: boolean
+  naatiCertified: boolean
+  regionalStudy: boolean
 }
 
 const EMPTY: Profile = {
   situation: '', age: '', english: '', experience: '', education: '',
   partnerType: '', location: '', studyLevel: '', occupationKey: '',
+  auExperience: '0', partnerSkills: 'none',
+  australianStudy: false, stemQualification: false, professionalYear: false,
+  naatiCertified: false, regionalStudy: false,
 }
 
 interface Rec {
@@ -101,7 +128,9 @@ function recommend(p: Profile): Rec[] {
   const shortageLabel = occ?.shortageList || ''
 
   if (p.situation === 'experienced') {
-    const pts = calcPoints(p.age, p.english, p.experience, p.education)
+    const pts = calcPoints(p.age, p.english, p.experience, p.education,
+      p.auExperience, p.partnerSkills, p.australianStudy, p.stemQualification,
+      p.professionalYear, p.naatiCertified, p.regionalStudy)
 
     // === 482→186 Employer Sponsored ===
     // Factors: demand level, shortage list (all lists eligible), experience, English not high bar
@@ -942,22 +971,59 @@ export function VisaExplorer() {
                   { id: 'bachelor', text: 'ป.ตรี', sub: '15 คะแนน' }, { id: 'trade', text: 'Diploma', sub: '10 คะแนน' },
                   { id: 'highschool', text: 'มัธยม', sub: '0 คะแนน' },
                 ]} />
+                
+                {/* Australian Experience */}
+                <Chips label="🇦🇺 ประสบการณ์ใน Australia" field="auExperience" value={profile.auExperience} options={[
+                  { id: '0', text: 'ไม่มี', sub: '0 คะแนน' }, { id: '1', text: '1-2 ปี', sub: '5 คะแนน' },
+                  { id: '3', text: '3-4 ปี', sub: '10 คะแนน' }, { id: '5', text: '5-7 ปี', sub: '15 คะแนน' },
+                  { id: '8', text: '8+ ปี', sub: '20 คะแนน' },
+                ]} />
+                
+                {/* Partner Skills */}
+                <Chips label="💑 คู่สมรส/แฟน" field="partnerSkills" value={profile.partnerSkills} options={[
+                  { id: 'none', text: 'ไม่มี/ไม่สมัครร่วม', sub: '0 คะแนน' },
+                  { id: 'au-citizen-pr', text: 'โสด/คู่เป็น AU PR', sub: '10 คะแนน' },
+                  { id: 'has-skills', text: 'คู่มี Skills+English', sub: '10 คะแนน' },
+                  { id: 'has-english', text: 'คู่มี English เท่านั้น', sub: '5 คะแนน' },
+                ]} />
+
+                {/* Bonus Points Section */}
+                <div className="bg-purple-50/50 rounded-2xl p-3 space-y-2">
+                  <div className="text-xs font-bold text-purple-700 mb-1">🎁 คะแนนโบนัส (ถ้ามี)</div>
+                  {[
+                    { field: 'australianStudy' as const, text: '🏫 เรียนใน AU 2 ปี+ (+5)', checked: profile.australianStudy },
+                    { field: 'stemQualification' as const, text: '🔬 STEM Masters/PhD จาก AU (+10)', checked: profile.stemQualification },
+                    { field: 'professionalYear' as const, text: '💼 Professional Year (+5)', checked: profile.professionalYear },
+                    { field: 'naatiCertified' as const, text: '🗣️ NAATI Community Language (+5)', checked: profile.naatiCertified },
+                    { field: 'regionalStudy' as const, text: '🏞️ เรียน Regional AU (+5)', checked: profile.regionalStudy },
+                  ].map(b => (
+                    <label key={b.field} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input type="checkbox" checked={b.checked}
+                        onChange={() => setProfile(prev => ({ ...prev, [b.field]: !prev[b.field] }))}
+                        className="w-4 h-4 rounded text-purple-600" />
+                      <span className="text-gray-700">{b.text}</span>
+                    </label>
+                  ))}
+                  <div className="text-[10px] text-gray-400 mt-1">* งานรวม (AU+นอก AU) สูงสุด 20 คะแนน</div>
+                </div>
+
                 {profile.age && profile.english && profile.experience && profile.education && (() => {
-                  const pts = calcPoints(profile.age, profile.english, profile.experience, profile.education)
+                  const pts = calcPoints(profile.age, profile.english, profile.experience, profile.education,
+                    profile.auExperience, profile.partnerSkills, profile.australianStudy, profile.stemQualification,
+                    profile.professionalYear, profile.naatiCertified, profile.regionalStudy)
                   return (
                     <div className={`rounded-2xl p-4 mb-2 text-center animate-fade-in ${
                       pts >= 65 ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300'
                       : pts >= 50 ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300'
                       : 'bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300'
                     }`}>
-                      <div className="text-xs text-gray-500 mb-1">คะแนน Skilled Migration เบื้องต้น</div>
+                      <div className="text-xs text-gray-500 mb-1">คะแนน Skilled Migration (ตาม Home Affairs)</div>
                       <div className={`text-5xl font-black ${
                         pts >= 65 ? 'text-green-600' : pts >= 50 ? 'text-yellow-600' : 'text-red-500'
                       }`}>{pts}</div>
                       {pts >= 65 && <div className="text-sm text-green-700 font-bold mt-2">✅ ผ่าน 65 คะแนน! สมัคร Skilled ได้</div>}
                       {pts >= 50 && pts < 65 && <div className="text-sm text-yellow-700 font-bold mt-2">⚠️ ใกล้แล้ว! 491 Regional (+15) = {pts + 15}</div>}
                       {pts < 50 && <div className="text-sm text-red-600 font-bold mt-2">คะแนน Skilled ยังต่ำ — แต่มีเส้นทางอื่น!</div>}
-                      <div className="text-[10px] mt-1 text-gray-400">* ยังไม่รวม Partner/AU Study/NAATI ที่เพิ่มได้ 5-40 คะแนน</div>
                     </div>
                   )
                 })()}
@@ -1050,7 +1116,7 @@ export function VisaExplorer() {
               <p className="text-xs text-gray-500 mt-1">
                 เรียงตามความเหมาะสม
                 {selectedOcc && ` • อาชีพ: ${selectedOcc.title}`}
-                {profile.situation === 'experienced' && ` • คะแนน: ${calcPoints(profile.age, profile.english, profile.experience, profile.education)}`}
+                {profile.situation === 'experienced' && ` • คะแนน: ${calcPoints(profile.age, profile.english, profile.experience, profile.education, profile.auExperience, profile.partnerSkills, profile.australianStudy, profile.stemQualification, profile.professionalYear, profile.naatiCertified, profile.regionalStudy)}`}
               </p>
               {selectedOcc && (
                 <div className="flex justify-center gap-2 mt-2 flex-wrap">
