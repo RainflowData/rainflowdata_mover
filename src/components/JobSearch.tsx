@@ -44,16 +44,18 @@ export function JobSearch({ value, specialization, onSelect }: JobSearchProps) {
   // Get selected occupation info
   const selectedOcc = value ? occupations[value] : null
 
-  // Popular occupations for quick select
+  // Popular occupations for quick select — IT/tech first (target audience)
   const popularKeys = [
     { key: 'dataEngineer', emoji: '💻', label: 'Data Engineer' },
+    { key: 'softwareEngineer', emoji: '💻', label: 'Software Eng' },
+    { key: 'mlEngineer', emoji: '🤖', label: 'ML/AI Eng' },
+    { key: 'devopsEngineer', emoji: '☁️', label: 'DevOps' },
+    { key: 'cybersecurityAnalyst', emoji: '🔒', label: 'Cybersecurity' },
     { key: 'registeredNurse', emoji: '🏥', label: 'Nurse' },
     { key: 'electrician', emoji: '🔧', label: 'Electrician' },
-    { key: 'softwareEngineer', emoji: '💻', label: 'Software Eng' },
     { key: 'generalPractitioner', emoji: '👨‍⚕️', label: 'GP' },
     { key: 'civilEngineer', emoji: '⚙️', label: 'Civil Eng' },
-    { key: 'plumber', emoji: '🔧', label: 'Plumber' },
-    { key: 'accountant', emoji: '📊', label: 'Accountant' },
+    { key: 'secondaryTeacher', emoji: '📚', label: 'Teacher' },
   ]
 
   const handleSelect = (key: string) => {

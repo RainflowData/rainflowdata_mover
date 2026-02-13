@@ -170,10 +170,13 @@ export function ProfileStep({ formData, updateField }: ProfileStepProps) {
             >
               <option value="">— เลือกระดับ IELTS —</option>
               <option value="functional">Functional (IELTS 4.5-5.0) — 0 คะแนน</option>
-              <option value="competent">Competent (IELTS 6.0) — 0 คะแนน (ขั้นต่ำ)</option>
-              <option value="proficient">Proficient (IELTS 7.0) — 10 คะแนน</option>
+              <option value="competent">Competent (IELTS 6.0-6.9) — 0 คะแนน (ขั้นต่ำ 189)</option>
+              <option value="proficient">Proficient (IELTS 7.0-7.9) — 10 คะแนน</option>
               <option value="superior">Superior (IELTS 8.0+) — 20 คะแนน ⭐</option>
             </select>
+            <p className="text-[10px] text-gray-400 mt-1">
+              💡 ใช้คะแนนอื่นแทนได้: PTE Academic / TOEFL iBT / CAE — <a href="https://immi.homeaffairs.gov.au/help-support/meeting-our-requirements/english-language" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">ดูตารางเทียบที่ Home Affairs</a>
+            </p>
           </div>
 
           {/* Overseas Experience */}
@@ -289,6 +292,7 @@ export function ProfileStep({ formData, updateField }: ProfileStepProps) {
                     🏫 เรียนใน Australia 2 ปีขึ้นไป (+5 คะแนน)
                   </span>
                 </label>
+                <p className="text-[10px] text-gray-400 ml-7 mt-0.5">จบหลักสูตร CRICOS 2 ปี+ (92 สัปดาห์) ในออสเตรเลีย</p>
               </div>
 
               <div>
@@ -303,6 +307,7 @@ export function ProfileStep({ formData, updateField }: ProfileStepProps) {
                     🔬 Masters/PhD STEM จาก AU (+10 คะแนน)
                   </span>
                 </label>
+                <p className="text-[10px] text-gray-400 ml-7 mt-0.5">ป.โท/เอก สาย Science, Tech, Engineering, Math, ICT จากมหาลัย AU</p>
               </div>
 
               <div>
@@ -317,6 +322,7 @@ export function ProfileStep({ formData, updateField }: ProfileStepProps) {
                     💼 Professional Year (ICT/Accounting/Engineering) (+5 คะแนน)
                   </span>
                 </label>
+                <p className="text-[10px] text-gray-400 ml-7 mt-0.5">โปรแกรม 12 เดือน รวมฝึกงาน — เฉพาะสาย ICT, บัญชี, วิศวะ</p>
               </div>
 
               <div>
@@ -331,6 +337,7 @@ export function ProfileStep({ formData, updateField }: ProfileStepProps) {
                     🗣️ NAATI Community Language (+5 คะแนน)
                   </span>
                 </label>
+                <p className="text-[10px] text-gray-400 ml-7 mt-0.5">สอบล่าม/นักแปลผ่าน NAATI — ภาษาไทยสอบได้</p>
               </div>
 
               <div>
@@ -345,6 +352,7 @@ export function ProfileStep({ formData, updateField }: ProfileStepProps) {
                     🏞️ เรียนใน Regional Australia (+5 คะแนน)
                   </span>
                 </label>
+                <p className="text-[10px] text-gray-400 ml-7 mt-0.5">เรียนนอกเมืองใหญ่ เช่น Adelaide, Gold Coast, Geelong</p>
               </div>
             </div>
           </div>
