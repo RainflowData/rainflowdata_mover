@@ -963,11 +963,13 @@ export const occupations: Record<string, Occupation> = {
 /** Popular occupations for quick access */
 export const POPULAR_OCCUPATIONS = [
   { key: 'dataEngineer', emoji: '💻' },
+  { key: 'softwareEngineer', emoji: '💻' },
+  { key: 'mlEngineer', emoji: '🤖' },
+  { key: 'devopsEngineer', emoji: '☁️' },
+  { key: 'cybersecurityAnalyst', emoji: '🔒' },
   { key: 'registeredNurse', emoji: '🏥' },
   { key: 'electrician', emoji: '🔧' },
-  { key: 'softwareEngineer', emoji: '💻' },
   { key: 'generalPractitioner', emoji: '👨‍⚕️' },
-  { key: 'plumber', emoji: '🔧' },
   { key: 'civilEngineer', emoji: '⚙️' },
   { key: 'secondaryTeacher', emoji: '📚' },
 ] as const
