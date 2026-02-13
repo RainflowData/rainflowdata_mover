@@ -12,9 +12,9 @@ export function Header() {
     : 'home'
 
   const tabs = [
-    { id: 'home', href: `${basePath}/`, label: '🌍 เลือกประเทศ' },
-    { id: 'sim', href: `${basePath}/sim`, label: '🇦🇺 จำลองชีวิต' },
-    { id: 'visa', href: `${basePath}/visa`, label: '📋 วีซ่า & เส้นทาง' },
+    { id: 'home', href: `${basePath}/`, label: '🌍 วิเคราะห์ประเทศ' },
+    { id: 'sim', href: `${basePath}/sim`, label: '🇦🇺 จำลองค่าใช้จ่าย' },
+    { id: 'visa', href: `${basePath}/visa`, label: '📋 วีซ่า & คะแนน' },
   ]
 
   return (
@@ -42,10 +42,10 @@ export function Header() {
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="text-xl md:text-2xl font-bold text-white" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.2)' }}>
-            🌏 Life After Migration
+            🐱 Catto Migration Planner
           </h1>
           <p className="text-sm text-white/90 truncate">
-            จำลองชีวิตหลังย้ายประเทศ แบบบอกความจริง ไม่ขายฝัน
+            วิเคราะห์ย้ายประเทศด้วยข้อมูลจริง ไม่เดา ไม่ขายฝัน
           </p>
         </div>
       </div>

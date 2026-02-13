@@ -296,6 +296,12 @@ export function ChatSimulator() {
   const sendGoalChips = () => {
     if (chipSelected.length === 0) return
     const text = chipSelected.map(id => GOAL_LABELS[id] || id).join(', ')
+    // Directly record goals + auto-confirm so chips advance to next phase
+    setAiGathered(prev => ({
+      ...prev,
+      goals: [...new Set([...prev.goals, ...chipSelected])]
+    }))
+    setGoalsConfirmed(true)
     sendMessage(text)
   }
 
@@ -303,7 +309,22 @@ export function ChatSimulator() {
   const pickOccFromSearch = (title: string, occId: string) => {
     setShowOccSearch(false)
     setOccChatSearch('')
+    // Directly record occupation — don't rely solely on AI to echo it
+    setAiGathered(prev => ({ ...prev, occupation: occId }))
     sendMessage(title)
+  }
+
+  // Quick occupation chip mapping → proper AI-expected IDs
+  const OCC_CHIP_MAP: { label: string; text: string; occId: string }[] = [
+    { label: '💻 IT', text: 'IT / โปรแกรมเมอร์', occId: 'software' },
+    { label: '⚙️ วิศวกร', text: 'วิศวกร', occId: 'engineering' },
+    { label: '📊 บัญชี', text: 'บัญชี / การเงิน', occId: 'accounting' },
+    { label: '🏥 สาธารณสุข', text: 'แพทย์ / พยาบาล', occId: 'healthcare' },
+    { label: '👨‍🍳 เชฟ', text: 'เชฟ / ครัว', occId: 'chef' },
+  ]
+  const sendOccChip = (text: string, occId: string) => {
+    setAiGathered(prev => ({ ...prev, occupation: occId }))
+    sendMessage(text)
   }
 
   // Determine what chips to show based on current gathered state
@@ -477,9 +498,9 @@ export function ChatSimulator() {
       <div className="sim-container">
         <div className="sim-scroll flex flex-col items-center justify-center min-h-[450px]">
           <div className="text-center animate-fade-in">
-            <div className="text-5xl mb-4">🌍</div>
+            <div className="text-5xl mb-4">🐱</div>
             <div className="text-2xl font-bold text-gray-800 mb-2">คุณเหมาะจะย้ายไปประเทศไหน?</div>
-            <div className="text-sm text-gray-500 mb-8">AI วิเคราะห์จาก 14 ประเทศ — เงินเดือน วีซ่า ค่าครองชีพจริง</div>
+            <div className="text-sm text-gray-500 mb-8">วิเคราะห์จาก 14 ประเทศ — เงินเดือน วีซ่า ค่าครองชีพ ข้อมูลจริง</div>
 
             <button onClick={startAiChat} className="btn-primary w-full justify-center rounded-xl py-4 text-base mb-3">
               🐱 เริ่มคุยกับ AI วิเคราะห์
@@ -563,6 +584,8 @@ export function ChatSimulator() {
               {chipSelected.length > 0 && (
                 <button onClick={() => {
                   const text = chipSelected.map(id => GOAL_LABELS[id] || id).join(', ')
+                  // Directly add selected goals
+                  setAiGathered(prev => ({ ...prev, goals: [...new Set([...prev.goals, ...chipSelected])] }))
                   sendMessage(`เพิ่มเหตุผลอีก: ${text}`)
                   setGoalsConfirmed(true)
                 }} className="chip-confirm animate-fade-in">
@@ -613,14 +636,8 @@ export function ChatSimulator() {
               </div>
               {/* Quick picks below search */}
               <div className="chip-grid" style={{ marginTop: '8px' }}>
-                {[
-                  { id: 'IT / โปรแกรมเมอร์', label: '💻 IT' },
-                  { id: 'วิศวกร', label: '⚙️ วิศวกร' },
-                  { id: 'บัญชี / การเงิน', label: '📊 บัญชี' },
-                  { id: 'แพทย์ / พยาบาล', label: '🏥 สาธารณสุข' },
-                  { id: 'เชฟ / ครัว', label: '👨‍🍳 เชฟ' },
-                ].map(c => (
-                  <button key={c.id} onClick={() => sendMessage(c.id)} className="quick-chip small">
+                {OCC_CHIP_MAP.map(c => (
+                  <button key={c.occId} onClick={() => sendOccChip(c.text, c.occId)} className="quick-chip small">
                     {c.label}
                   </button>
                 ))}
