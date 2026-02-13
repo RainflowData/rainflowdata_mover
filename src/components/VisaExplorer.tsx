@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { occupations, getCategories, searchOccupations, POPULAR_OCCUPATIONS } from '@/data/occupations'
+import type { Occupation } from '@/lib/types'
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
@@ -29,11 +31,12 @@ interface Profile {
   partnerType: string
   location: string
   studyLevel: string
+  occupationKey: string // key from occupations.ts
 }
 
 const EMPTY: Profile = {
   situation: '', age: '', english: '', experience: '', education: '',
-  partnerType: '', location: '', studyLevel: '',
+  partnerType: '', location: '', studyLevel: '', occupationKey: '',
 }
 
 interface Rec {
@@ -44,57 +47,235 @@ interface Rec {
   tips: string[]
   journey: string[]
   catId: string
+  factors?: { label: string; value: number; max: number }[] // breakdown for transparency
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Recommendation Engine
+   Occupation-Aware Recommendation Engine
+   
+   % Calculation Methodology:
+   - Based on real SkillSelect data (minPoints, shortage lists)
+   - PMSOL = Priority Migration Skilled Occupation List (highest priority)
+   - MLTSSL = Medium and Long-term Strategic Skills List (eligible 189/190/491)
+   - STSOL = Short-term Skilled Occupation List (only 482, no direct skilled PR)
+   - Points compared against actual SkillSelect invitation rounds (Nov 2025)
    ═══════════════════════════════════════════════════════════ */
+function getShortageLevel(shortageList: string): 'pmsol' | 'mltssl' | 'stsol' | 'none' {
+  const s = shortageList.toUpperCase()
+  if (s.includes('PMSOL')) return 'pmsol'
+  if (s.includes('MLTSSL')) return 'mltssl'
+  if (s.includes('STSOL')) return 'stsol'
+  return 'none'
+}
+
+function getDemandScore(demand: Occupation['demand']): number {
+  switch (demand) {
+    case 'สูงมาก': return 15
+    case 'สูง': return 10
+    case 'ปานกลาง': return 5
+    case 'ต่ำ': return 0
+    default: return 0
+  }
+}
+
 function recommend(p: Profile): Rec[] {
   const r: Rec[] = []
+  const occ = p.occupationKey ? occupations[p.occupationKey] : null
+  const shortage = occ ? getShortageLevel(occ.shortageList) : null
+  const demandScore = occ ? getDemandScore(occ.demand) : 5
+  const isOnMLTSSLOrAbove = shortage === 'pmsol' || shortage === 'mltssl'
+  const isSTSOLOnly = shortage === 'stsol'
+  const shortageLabel = occ?.shortageList || ''
 
   if (p.situation === 'experienced') {
     const pts = calcPoints(p.age, p.english, p.experience, p.education)
 
-    r.push({
-      type: '482→186', name: 'Employer Sponsored (TSS→PR)', pct: 88, emoji: '💼',
-      tips: ['ไม่ต้องใช้คะแนน Points เลย!', 'IELTS ขั้นต่ำ 5.0 เท่านั้น', 'ได้เริ่มทำงาน+รายได้ทันที', 'เส้นทาง PR ชัด: ทำงาน 2 ปี → 186 PR'],
-      journey: ['หางาน AU+sponsor', '3-6 เดือน ได้วีซ่า', 'ทำงาน 2 ปี', 'ยื่น 186 PR', '🏠 ได้ PR!'],
-      catId: 'employer',
-    })
+    // === 482→186 Employer Sponsored ===
+    // Factors: demand level, shortage list (all lists eligible), experience, English not high bar
+    {
+      const factors: { label: string; value: number; max: number }[] = []
+      let score = 40 // base: employer sponsored always available
 
-    if (pts >= 85) {
+      // Occupation on any list = eligible
+      if (occ) {
+        const listBonus = shortage === 'pmsol' ? 25 : shortage === 'mltssl' ? 20 : shortage === 'stsol' ? 15 : 5
+        factors.push({ label: 'Occupation List', value: listBonus, max: 25 })
+        score += listBonus
+
+        factors.push({ label: 'ความต้องการตลาด', value: demandScore, max: 15 })
+        score += demandScore
+
+        const expBonus = p.experience === '8+' ? 10 : p.experience === '5-7' ? 7 : p.experience === '3-4' ? 5 : 2
+        factors.push({ label: 'ประสบการณ์', value: expBonus, max: 10 })
+        score += expBonus
+      } else {
+        factors.push({ label: 'ยังไม่เลือกอาชีพ', value: 20, max: 50 })
+        score += 20
+      }
+
+      score = Math.min(score, 95)
+      const occTips = occ ? [
+        `อาชีพ "${occ.title}" อยู่ใน ${shortageLabel}`,
+        occ.demand === 'สูงมาก' || occ.demand === 'สูง'
+          ? `ตลาดต้องการ ${occ.demand} — หา sponsor ง่ายกว่าปกติ`
+          : `ตลาดต้องการ ${occ.demand} — ต้องเตรียมตัวหา sponsor ดีๆ`,
+        `เงินเดือนเริ่มต้น $${occ.salaryRange.entry.toLocaleString()} - $${occ.salaryRange.senior.toLocaleString()} AUD/ปี`,
+      ] : ['เลือกอาชีพเพื่อดูข้อมูลเจาะลึก']
+
       r.push({
-        type: '189', name: 'Skilled Independent', pct: pts >= 95 ? 93 : 82, emoji: '🎯',
-        tips: [`คะแนน ${pts} — สูง! 🔥`, 'PR ทันที ไม่ผูกนายจ้าง/รัฐ', 'เลือกอยู่ที่ไหนก็ได้ใน AU', 'แข่งขันสูง — cut-off จริง 85-95+'],
-        journey: ['Skills Assessment', 'ยื่น EOI (SkillSelect)', 'รอ Invitation', 'ยื่น Application', '🏠 ได้ PR!'],
-        catId: 'skilled',
+        type: '482→186', name: 'Employer Sponsored (TSS→PR)', pct: score, emoji: '💼',
+        tips: ['ไม่ต้องใช้คะแนน Points เลย!', 'IELTS ขั้นต่ำ 5.0 เท่านั้น', ...occTips],
+        journey: ['หางาน AU+sponsor', '3-6 เดือน ได้วีซ่า', 'ทำงาน 2 ปี', 'ยื่น 186 PR', '🏠 ได้ PR!'],
+        catId: 'employer', factors,
       })
     }
 
-    if (pts >= 65) {
-      r.push({
-        type: '190', name: 'Skilled Nominated (+5 จากรัฐ)', pct: pts >= 85 ? 88 : pts >= 75 ? 76 : 65, emoji: '🏛️',
-        tips: [`คะแนน ${pts} + รัฐ +5 = ${pts + 5}`, 'ได้ PR ทันที', 'ต้องอยู่รัฐที่ nominate 2 ปี', 'cut-off ต่ำกว่า 189'],
-        journey: ['Skills Assessment', 'State Nomination', 'ยื่น EOI', 'ได้ Invitation', '🏠 ได้ PR!'],
-        catId: 'skilled',
-      })
-    }
+    // === 189 Skilled Independent ===
+    // ONLY if occupation is on MLTSSL or PMSOL (STSOL = NOT eligible for 189)
+    if (!occ || isOnMLTSSLOrAbove) {
+      const factors: { label: string; value: number; max: number }[] = []
 
-    if (pts < 65) {
-      const rPts = pts + 15
-      if (rPts >= 65) {
+      if (occ) {
+        const minPts = occ.minPoints
+        // Points vs actual cut-off for this occupation
+        let pointsScore: number
+        if (pts >= minPts + 10) pointsScore = 35
+        else if (pts >= minPts) pointsScore = 25
+        else if (pts >= minPts - 10) pointsScore = 15
+        else pointsScore = 5
+        factors.push({ label: `คะแนน ${pts} vs cut-off ${minPts}`, value: pointsScore, max: 35 })
+
+        const listBonus = shortage === 'pmsol' ? 25 : 20
+        factors.push({ label: `${shortageLabel}`, value: listBonus, max: 25 })
+
+        factors.push({ label: 'ความต้องการตลาด', value: demandScore, max: 15 })
+
+        const total = Math.min(20 + pointsScore + listBonus + demandScore, 95)
+
+        const aboveBelow = pts >= minPts
+          ? `คะแนน ${pts} ≥ cut-off ${minPts} ✅`
+          : `คะแนน ${pts} < cut-off ${minPts} ❌ ต้องเพิ่มอีก ${minPts - pts}`
+
         r.push({
-          type: '491→191', name: 'Skilled Regional (+15 คะแนน)', pct: 72, emoji: '🌾',
-          tips: [`คะแนน ${pts} + Regional +15 = ${rPts} ✅`, 'ค่าครองชีพถูกกว่าเมืองใหญ่', 'อยู่ regional 3 ปี → 191 PR'],
+          type: '189', name: 'Skilled Independent', pct: total, emoji: '🎯',
+          tips: [
+            aboveBelow,
+            `อาชีพอยู่ใน ${shortageLabel} — สมัคร 189 ได้`,
+            'PR ทันที ไม่ผูกนายจ้าง/รัฐ',
+            occ.pathToPR ? `แนวโน้ม PR: ${occ.pathToPR}` : '',
+          ].filter(Boolean),
+          journey: ['Skills Assessment', 'ยื่น EOI (SkillSelect)', 'รอ Invitation', 'ยื่น Application', '🏠 ได้ PR!'],
+          catId: 'skilled', factors,
+        })
+      } else if (pts >= 65) {
+        // No occupation selected, show generic
+        r.push({
+          type: '189', name: 'Skilled Independent', pct: pts >= 90 ? 70 : pts >= 80 ? 55 : 40, emoji: '🎯',
+          tips: [`คะแนน ${pts} — เลือกอาชีพเพื่อเทียบ cut-off จริง`, 'ต้องอยู่ใน MLTSSL/PMSOL เท่านั้น', 'PR ทันที ไม่ผูกนายจ้าง/รัฐ'],
+          journey: ['Skills Assessment', 'ยื่น EOI (SkillSelect)', 'รอ Invitation', 'ยื่น Application', '🏠 ได้ PR!'],
+          catId: 'skilled',
+        })
+      }
+    } else if (isSTSOLOnly && occ) {
+      // STSOL occupations CANNOT apply for 189
+      // Don't push 189, show note in 482
+    }
+
+    // === 190 Skilled Nominated (+5 state) ===
+    if (!occ || isOnMLTSSLOrAbove) {
+      const pts190 = pts + 5 // state nomination adds 5
+      if (pts190 >= 65) {
+        const factors: { label: string; value: number; max: number }[] = []
+        let score = 20 // base
+
+        if (occ) {
+          const minPts = occ.minPoints - 5 // 190 cut-off typically 5 lower than 189
+          const effectiveMin = Math.max(minPts, 65)
+          let pointsScore: number
+          if (pts190 >= effectiveMin + 10) pointsScore = 30
+          else if (pts190 >= effectiveMin) pointsScore = 22
+          else if (pts190 >= effectiveMin - 10) pointsScore = 12
+          else pointsScore = 5
+          factors.push({ label: `คะแนน ${pts}+5 vs ~${effectiveMin}`, value: pointsScore, max: 30 })
+          score += pointsScore
+
+          const listBonus = shortage === 'pmsol' ? 20 : 15
+          factors.push({ label: shortageLabel, value: listBonus, max: 20 })
+          score += listBonus
+
+          factors.push({ label: 'ความต้องการตลาด', value: demandScore, max: 15 })
+          score += demandScore
+        } else {
+          score += (pts190 >= 85 ? 50 : pts190 >= 75 ? 35 : 20)
+        }
+
+        score = Math.min(score, 95)
+        r.push({
+          type: '190', name: 'Skilled Nominated (+5 จากรัฐ)', pct: score, emoji: '🏛️',
+          tips: [
+            `คะแนน ${pts} + รัฐ +5 = ${pts190}`,
+            occ ? `อาชีพ "${occ.title}" สมัครได้ (${shortageLabel})` : 'เลือกอาชีพเพื่อเทียบ cut-off',
+            'ได้ PR ทันที', 'ต้องอยู่รัฐที่ nominate 2 ปี',
+          ],
+          journey: ['Skills Assessment', 'State Nomination', 'ยื่น EOI', 'ได้ Invitation', '🏠 ได้ PR!'],
+          catId: 'skilled', factors,
+        })
+      }
+    }
+
+    // === 491 Regional (+15) ===
+    if (!occ || isOnMLTSSLOrAbove) {
+      const pts491 = pts + 15
+      if (pts491 >= 65 && pts < 65) {
+        const factors: { label: string; value: number; max: number }[] = []
+        let score = 25
+
+        if (occ) {
+          factors.push({ label: `คะแนน ${pts}+15=${pts491}`, value: 25, max: 30 })
+          const listBonus = shortage === 'pmsol' ? 20 : 15
+          factors.push({ label: shortageLabel, value: listBonus, max: 20 })
+          score += 25 + listBonus + Math.min(demandScore, 10)
+        } else {
+          score += 35
+        }
+
+        score = Math.min(score, 90)
+        r.push({
+          type: '491→191', name: 'Skilled Regional (+15 คะแนน)', pct: score, emoji: '🌾',
+          tips: [
+            `คะแนน ${pts} + Regional +15 = ${pts491} ✅`,
+            occ ? `"${occ.title}" สมัครได้ — ${shortageLabel}` : '',
+            'ค่าครองชีพถูกกว่าเมืองใหญ่', 'อยู่ regional 3 ปี → 191 PR',
+          ].filter(Boolean),
           journey: ['Skills Assessment', 'Regional Nomination', 'อยู่ Regional 3 ปี', 'ยื่น 191', '🏠 ได้ PR!'],
+          catId: 'skilled', factors,
+        })
+      }
+    }
+
+    // === STSOL-only: warn user they can only do 482 ===
+    if (isSTSOLOnly && occ) {
+      // Already covered by 482 above, but add a 491 note if points low
+      const pts491 = pts + 15
+      if (pts491 >= 65) {
+        r.push({
+          type: '491 (STSOL)', name: 'Regional Only — STSOL Limitation', pct: 35, emoji: '⚠️',
+          tips: [
+            `⚠️ "${occ.title}" อยู่ใน STSOL เท่านั้น`,
+            'STSOL ไม่สามารถสมัคร 189/190 ได้!',
+            '482 (2ปี) → 186 PR คือเส้นทางหลัก',
+            'ลองเปลี่ยนสาย/อัพสกิลไปสายที่อยู่ MLTSSL/PMSOL',
+          ],
+          journey: ['482 (STSOL, 2 ปี)', 'ต่อได้ 1 ครั้ง', '186 PR (ถ้า employer nominate)', '🏠 ได้ PR!'],
           catId: 'skilled',
         })
       }
     }
 
+    // === WHV for young experienced workers ===
     if (['18-24', '25-32'].includes(p.age)) {
       r.push({
-        type: '462', name: 'Work & Holiday (ทดลอง)', pct: 40, emoji: '🏖️',
+        type: '462', name: 'Work & Holiday (ทดลอง)', pct: 30, emoji: '🏖️',
         tips: ['ค่าวีซ่าถูกมาก $640', 'เข้า AU ได้เร็ว ทดลองชีวิตจริง', 'ใช้หา employer sponsor → 482'],
         journey: ['สมัคร 462', 'ทำงาน+หา sponsor', 'เปลี่ยน 482', '2 ปี → 186', '🏠 ได้ PR!'],
         catId: 'whv',
@@ -103,22 +284,50 @@ function recommend(p: Profile): Rec[] {
   }
 
   if (p.situation === 'student') {
+    const occ = p.occupationKey ? occupations[p.occupationKey] : null
     const durLabel = p.studyLevel === 'phd' ? '4 ปี' : p.studyLevel === 'masters' ? '3 ปี' : '2 ปี'
+    const studyBonus = p.studyLevel === 'phd' ? 20 : p.studyLevel === 'masters' ? 15 : 10
+
+    // Student path score depends on field demand
+    let studentPct = 70
+    const studentTips = ['เริ่มต้นได้เลยไม่ต้องมีประสบการณ์', `จบแล้ว 485 ทำงานได้ ${durLabel}`, 'ได้วุฒิ AU +5 คะแนน Points']
+    if (occ) {
+      const shortage = getShortageLevel(occ.shortageList)
+      const listBonus = shortage === 'pmsol' ? 15 : shortage === 'mltssl' ? 10 : 5
+      studentPct = 55 + listBonus + (studyBonus > 10 ? 10 : 5) + getDemandScore(occ.demand)
+      studentTips.push(`สาย "${occ.title}" — ${occ.shortageList}`)
+      studentTips.push(`ตลาดต้องการ: ${occ.demand}`)
+      if (shortage === 'pmsol') studentTips.push('🔥 สายนี้ Priority — โอกาส PR สูงมาก!')
+    } else {
+      studentTips.push('เลือกสายอาชีพเพื่อดูโอกาส PR')
+    }
+    studentPct = Math.min(studentPct, 92)
+
     r.push({
-      type: '500→485', name: 'Student → Graduate → PR', pct: 85, emoji: '🎓',
-      tips: ['เริ่มต้นได้เลยไม่ต้องมีประสบการณ์', `จบแล้ว 485 ทำงานได้ ${durLabel}`, 'ได้วุฒิ AU +5 คะแนน Points', 'ระหว่าง 485 หา employer sponsor → PR'],
+      type: '500→485', name: 'Student → Graduate → PR', pct: studentPct, emoji: '🎓',
+      tips: studentTips,
       journey: ['เรียน (500)', `จบ → 485 (${durLabel})`, 'ทำงาน full-time', '482→186 หรือ 189/190', '🏠 ได้ PR!'],
       catId: 'student',
     })
+
+    let empPct = 55
+    if (occ) {
+      const shortage = getShortageLevel(occ.shortageList)
+      empPct = 40 + (shortage === 'pmsol' ? 25 : shortage === 'mltssl' ? 18 : 10) + getDemandScore(occ.demand)
+    }
+    empPct = Math.min(empPct, 90)
     r.push({
-      type: '482→186', name: 'Employer Sponsored (หลังจบ)', pct: 68, emoji: '💼',
-      tips: ['จบแล้วหา employer sponsor', 'ไม่ต้องใช้คะแนน Points', 'IELTS 5.0 พอ', 'เส้นทาง PR: 482 → 2 ปี → 186'],
+      type: '482→186', name: 'Employer Sponsored (หลังจบ)', pct: empPct, emoji: '💼',
+      tips: [
+        'จบแล้วหา employer sponsor', 'ไม่ต้องใช้คะแนน Points',
+        occ ? `"${occ.title}" — ความต้องการ ${occ.demand}` : '',
+      ].filter(Boolean),
       journey: ['เรียนจบ', '485 หางาน', 'Employer → 482', '2 ปี → 186', '🏠 ได้ PR!'],
       catId: 'employer',
     })
     if (['18-24', '25-32'].includes(p.age)) {
       r.push({
-        type: '462', name: 'WHV ก่อนเรียน (ลองก่อน)', pct: 50, emoji: '🏖️',
+        type: '462', name: 'WHV ก่อนเรียน (ลองก่อน)', pct: 35, emoji: '🏖️',
         tips: ['ลองไปอยู่ AU ก่อนลงทุนค่าเทอม', 'ค่าวีซ่าถูก $640', 'ได้ข้อมูลจริง ก่อนตัดสินใจ'],
         journey: ['462 → ทำงาน 1 ปี', 'ตัดสินใจ → เรียน (500)', 'จบ → 485', 'หา sponsor → PR'],
         catId: 'whv',
@@ -131,37 +340,77 @@ function recommend(p: Profile): Rec[] {
     const vn = onshore ? '820/801' : '309/100'
     const nm = onshore ? 'Partner Visa (Onshore)' : 'Partner Visa (Offshore)'
     const tip3 = p.partnerType === 'married' ? 'แต่งงานแล้ว — หลักฐานชัดเจน' : 'De facto — เตรียมหลักฐานความสัมพันธ์ให้ดี'
+    // Partner visa: high if married (strong evidence), slightly lower for de facto
+    const partnerPct = p.partnerType === 'married' ? 90 : 82
     r.push({
-      type: vn, name: nm, pct: 95, emoji: onshore ? '💑' : '💍',
+      type: vn, name: nm, pct: partnerPct, emoji: onshore ? '💑' : '💍',
       tips: ['ไม่ต้องมี skills/points/English!', onshore ? 'ได้ bridging visa ทำงานได้ทันที' : 'สมัครจากไทยได้เลย', tip3, 'ค่าวีซ่า $9,095 — แต่ได้ PR แน่นอน'],
       journey: ['เตรียมเอกสาร', `ยื่น ${vn.split('/')[0]}`, 'รอ 12-24 เดือน', onshore ? 'Bridging → ทำงาน' : 'ย้ายไป AU', `🏠 ${vn.split('/')[1]} PR!`],
       catId: 'partner',
+      factors: [
+        { label: 'ความสัมพันธ์', value: p.partnerType === 'married' ? 30 : 22, max: 30 },
+        { label: 'ไม่ต้อง skill/points', value: 30, max: 30 },
+        { label: onshore ? 'Onshore (bridging visa)' : 'Offshore', value: onshore ? 20 : 15, max: 20 },
+      ],
     })
   }
 
   if (p.situation === 'whv') {
+    const occWhv = p.occupationKey ? occupations[p.occupationKey] : null
     if (['18-24', '25-32'].includes(p.age)) {
       r.push({
-        type: '462', name: 'Work & Holiday', pct: 95, emoji: '🏖️',
-        tips: ['ค่าวีซ่าถูกที่สุด $640!', 'IELTS 4.5 ง่ายมาก', 'ทำงานเต็มเวลาได้ทุกอาชีพ', 'ต่อได้ถึง 3 ปี (regional work)', 'สร้างประสบการณ์ → 482 → PR'],
+        type: '462', name: 'Work & Holiday', pct: 88, emoji: '🏖️',
+        tips: [
+          'ค่าวีซ่าถูกที่สุด $640!', 'IELTS 4.5 ง่ายมาก',
+          'ทำงานเต็มเวลาได้ทุกอาชีพ', 'ต่อได้ถึง 3 ปี (regional work)',
+          'สร้างประสบการณ์ AU → เปลี่ยน 482 → PR',
+        ],
         journey: ['สมัคร 462', 'ไป AU ทำงาน', 'หา employer sponsor', '482 → 2 ปี', '🏠 186 PR!'],
         catId: 'whv',
       })
+
+      // 482 path after WHV, factor in occupation demand
+      let whvEmpPct = 50
+      if (occWhv) {
+        const s = getShortageLevel(occWhv.shortageList)
+        whvEmpPct = 35 + (s === 'pmsol' ? 25 : s === 'mltssl' ? 18 : 10) + getDemandScore(occWhv.demand)
+      }
+      whvEmpPct = Math.min(whvEmpPct, 85)
       r.push({
-        type: '500', name: 'Student Visa (ทางเลือก)', pct: 50, emoji: '🎓',
+        type: '482 (หลัง WHV)', name: 'Employer Sponsored (หลัง WHV)', pct: whvEmpPct, emoji: '💼',
+        tips: [
+          'ใช้ WHV สร้าง experience AU → หานายจ้าง sponsor',
+          occWhv ? `"${occWhv.title}" — ตลาดต้องการ ${occWhv.demand}` : 'เลือกอาชีพเพื่อดูโอกาส',
+        ],
+        journey: ['462 WHV', 'หา employer', '482 sponsor', 'ทำงาน 2 ปี', '🏠 186 PR!'],
+        catId: 'employer',
+      })
+
+      r.push({
+        type: '500', name: 'Student Visa (ทางเลือก)', pct: 40, emoji: '🎓',
         tips: ['ได้วุฒิ AU (+5 คะแนน)', 'ทำงานพาร์ทไทม์ได้', 'จบแล้ว 485 ทำงานต่อ 2-4 ปี'],
         journey: ['เรียน (500)', 'จบ → 485', 'หา sponsor', '482 → 186', '🏠 PR!'],
         catId: 'student',
       })
     } else {
+      let overAgeEmpPct = 60
+      if (occWhv) {
+        const s = getShortageLevel(occWhv.shortageList)
+        overAgeEmpPct = 40 + (s === 'pmsol' ? 25 : s === 'mltssl' ? 18 : 10) + getDemandScore(occWhv.demand)
+      }
+      overAgeEmpPct = Math.min(overAgeEmpPct, 88)
       r.push({
-        type: '482', name: 'Employer Sponsored (แทน WHV)', pct: 80, emoji: '💼',
-        tips: ['⚠️ อายุเกิน 30 — สมัคร WHV ไม่ได้', '482 รับถึงอายุ 45', 'ไม่ต้องใช้คะแนน Points', 'เส้นทาง PR: 482 → 2 ปี → 186'],
+        type: '482', name: 'Employer Sponsored (แทน WHV)', pct: overAgeEmpPct, emoji: '💼',
+        tips: [
+          '⚠️ อายุเกิน 30 — สมัคร WHV ไม่ได้',
+          '482 รับถึงอายุ 45', 'ไม่ต้องใช้คะแนน Points',
+          occWhv ? `"${occWhv.title}" — ความต้องการ ${occWhv.demand}` : '',
+        ].filter(Boolean),
         journey: ['หางาน AU + sponsor', 'ได้ 482', 'ทำงาน 2 ปี', 'ยื่น 186', '🏠 ได้ PR!'],
         catId: 'employer',
       })
       r.push({
-        type: '500', name: 'Student Visa', pct: 60, emoji: '🎓',
+        type: '500', name: 'Student Visa', pct: 45, emoji: '🎓',
         tips: ['ไม่จำกัดอายุ (ถึง 50 ปี)', 'เรียน + ทำงานพาร์ทไทม์', 'จบแล้วได้ 485 ทำงานต่อ'],
         journey: ['เรียน (500)', 'จบ → 485', 'หา sponsor', '482 → 186', '🏠 PR!'],
         catId: 'student',
@@ -335,6 +584,17 @@ export function VisaExplorer() {
   const [analyzeMsg, setAnalyzeMsg] = useState('')
   const resultRef = useRef<HTMLDivElement>(null)
   const [expandedVisa, setExpandedVisa] = useState<string | null>(null)
+  const [occSearch, setOccSearch] = useState('')
+  const [showOccPicker, setShowOccPicker] = useState(false)
+
+  // Occupation search results
+  const occResults = useMemo(() => {
+    if (!occSearch || occSearch.length < 1) return []
+    return searchOccupations(occSearch)
+  }, [occSearch])
+
+  // Get selected occupation info
+  const selectedOcc = profile.occupationKey ? occupations[profile.occupationKey] : null
 
   // Animated match percentages
   const [animPcts, setAnimPcts] = useState<number[]>([])
@@ -366,27 +626,186 @@ export function VisaExplorer() {
 
   function analyze() {
     setStep(2)
-    const msgs = ['กำลังเช็คข้อมูล...', 'เทียบวีซ่า 10 ประเภท...', 'วิเคราะห์เส้นทาง PR...', 'เจอแล้ว! 🎉']
+    const occName = profile.occupationKey && profile.occupationKey !== '__skip__' && occupations[profile.occupationKey]
+      ? occupations[profile.occupationKey].title : null
+    const msgs = [
+      'กำลังเช็คข้อมูล...',
+      occName ? `วิเคราะห์ "${occName}" ใน Occupation List...` : 'เทียบวีซ่า 10 ประเภท...',
+      'เทียบ Points vs SkillSelect cut-off จริง...',
+      'เจอแล้ว! 🎉',
+    ]
     msgs.forEach((m, i) => setTimeout(() => setAnalyzeMsg(m), i * 600))
-    setTimeout(() => { setRecs(recommend(profile)); setStep(3) }, 2500)
+    setTimeout(() => {
+      // If user skipped occupation, pass empty key so recommend() works generically
+      const cleanProfile = { ...profile, occupationKey: profile.occupationKey === '__skip__' ? '' : profile.occupationKey }
+      setRecs(recommend(cleanProfile))
+      setStep(3)
+    }, 2500)
   }
 
   function isComplete() {
+    const hasOcc = !!(profile.occupationKey) // can be real key or '__skip__'
     switch (profile.situation) {
-      case 'experienced': return !!(profile.age && profile.english && profile.experience && profile.education)
-      case 'student': return !!(profile.age && profile.studyLevel)
+      case 'experienced': return !!(profile.age && profile.english && profile.experience && profile.education && hasOcc)
+      case 'student': return !!(profile.age && profile.studyLevel && hasOcc)
       case 'partner': return !!(profile.partnerType && profile.location)
-      case 'whv': return !!profile.age
+      case 'whv': return !!profile.age // occ is optional for WHV
       default: return false
     }
   }
 
   function reset() {
     setStep(0); setProfile({ ...EMPTY }); setRecs([]); setShowAll(false); setAnimPcts([])
+    setOccSearch(''); setShowOccPicker(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const set = (key: keyof Profile, val: string) => setProfile(p => ({ ...p, [key]: val }))
+
+  /* ─── Occupation Picker Component ─── */
+  const OccupationPicker = ({ label }: { label: string }) => (
+    <div className="mb-4">
+      <div className="text-xs font-semibold text-gray-500 mb-2">{label}</div>
+      {selectedOcc ? (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-3 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-bold text-gray-800">{selectedOcc.title}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{selectedOcc.category}</div>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  getShortageLevel(selectedOcc.shortageList) === 'pmsol' ? 'bg-green-100 text-green-700 border border-green-300' :
+                  getShortageLevel(selectedOcc.shortageList) === 'mltssl' ? 'bg-blue-100 text-blue-700 border border-blue-300' :
+                  'bg-orange-100 text-orange-700 border border-orange-300'
+                }`}>{selectedOcc.shortageList}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                  selectedOcc.demand === 'สูงมาก' ? 'bg-red-100 text-red-700' :
+                  selectedOcc.demand === 'สูง' ? 'bg-orange-100 text-orange-700' :
+                  selectedOcc.demand === 'ปานกลาง' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-gray-100 text-gray-600'
+                }`}>ต้องการ: {selectedOcc.demand}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                  cut-off: {selectedOcc.minPoints} คะแนน
+                </span>
+              </div>
+              <div className="text-[10px] text-gray-400 mt-1.5">
+                💰 ${selectedOcc.salaryRange.entry.toLocaleString()} - ${selectedOcc.salaryRange.senior.toLocaleString()} AUD/ปี
+              </div>
+            </div>
+            <button onClick={() => { setProfile(p => ({ ...p, occupationKey: '' })); setOccSearch(''); setShowOccPicker(true) }}
+              className="text-xs text-blue-600 underline shrink-0 ml-2 hover:text-blue-800">เปลี่ยน</button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          {/* Popular occupations */}
+          {!showOccPicker && (
+            <div className="animate-fade-in">
+              <div className="text-[10px] text-gray-400 mb-1.5">⭐ อาชีพยอดนิยมคนไทย</div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {POPULAR_OCCUPATIONS.map(po => {
+                  const o = occupations[po.key]
+                  if (!o) return null
+                  return (
+                    <button key={po.key} onClick={() => { setProfile(p => ({ ...p, occupationKey: po.key })); setShowOccPicker(false) }}
+                      className="px-2.5 py-1.5 rounded-lg text-xs border-2 border-gray-200 bg-white hover:border-blue-300 hover:shadow transition-all active:scale-95">
+                      <span>{po.emoji} {o.title}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <button onClick={() => setShowOccPicker(true)}
+                className="text-xs text-blue-600 underline hover:text-blue-800">🔍 ค้นหาอาชีพอื่น</button>
+            </div>
+          )}
+
+          {/* Search input */}
+          {showOccPicker && (
+            <div className="animate-fade-in">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={occSearch}
+                  onChange={e => setOccSearch(e.target.value)}
+                  placeholder="พิมพ์ชื่ออาชีพ เช่น nurse, engineer, electrician..."
+                  className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none text-sm transition-colors"
+                  autoFocus
+                />
+                {occSearch && (
+                  <button onClick={() => setOccSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm">✕</button>
+                )}
+              </div>
+
+              {/* Search results */}
+              {occResults.length > 0 && (
+                <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  {occResults.map(or => {
+                    const o = occupations[or.key]
+                    const sl = getShortageLevel(o.shortageList)
+                    return (
+                      <button key={or.key}
+                        onClick={() => { setProfile(p => ({ ...p, occupationKey: or.key })); setOccSearch(''); setShowOccPicker(false) }}
+                        className="w-full text-left px-3 py-2.5 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium text-gray-800">{o.title}</div>
+                            <div className="text-[10px] text-gray-500">{o.category}</div>
+                          </div>
+                          <div className="flex gap-1 shrink-0 ml-2">
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                              sl === 'pmsol' ? 'bg-green-100 text-green-700' :
+                              sl === 'mltssl' ? 'bg-blue-100 text-blue-700' :
+                              'bg-orange-100 text-orange-700'
+                            }`}>{sl === 'pmsol' ? 'PMSOL' : sl === 'mltssl' ? 'MLTSSL' : 'STSOL'}</span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{o.minPoints}pts</span>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {occSearch.length >= 2 && occResults.length === 0 && (
+                <div className="mt-2 text-xs text-gray-400 text-center py-3">ไม่พบอาชีพ — ลองคำค้นภาษาอังกฤษ</div>
+              )}
+
+              {/* Browse by category */}
+              {!occSearch && (
+                <div className="mt-3">
+                  <div className="text-[10px] text-gray-400 mb-1.5">📂 หรือเลือกตามหมวดหมู่</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {getCategories().map(cat => (
+                      <button key={cat} onClick={() => setOccSearch(cat)}
+                        className="px-2.5 py-1 rounded-lg text-[11px] border border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 transition-all">
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => { setShowOccPicker(false); setOccSearch('') }}
+                className="mt-2 text-xs text-gray-400 underline">← กลับไปอาชีพยอดนิยม</button>
+            </div>
+          )}
+
+          {/* Skip option */}
+          {!selectedOcc && !showOccPicker && (
+            <button onClick={() => setProfile(p => ({ ...p, occupationKey: '__skip__' }))}
+              className="mt-2 text-[11px] text-gray-400 underline hover:text-gray-600">ข้ามไปก่อน (ยังไม่แน่ใจ)</button>
+          )}
+        </div>
+      )}
+      {/* Source note */}
+      {selectedOcc && (
+        <div className="text-[9px] text-gray-400 mt-1">
+          📊 {selectedOcc.visaSource}
+        </div>
+      )}
+    </div>
+  )
 
   /* ─── Chip Selector ─── */
   const Chips = ({ label, options, value, field }: {
@@ -490,6 +909,7 @@ export function VisaExplorer() {
 
               {/* Experienced */}
               {profile.situation === 'experienced' && (<>
+                <OccupationPicker label="💼 อาชีพ/สายงานของคุณ" />
                 <Chips label="📅 อายุ" field="age" value={profile.age} options={[
                   { id: '18-24', text: '18-24', sub: '25 คะแนน' }, { id: '25-32', text: '25-32', sub: '30 คะแนน' },
                   { id: '33-39', text: '33-39', sub: '25 คะแนน' }, { id: '40-44', text: '40-44', sub: '15 คะแนน' },
@@ -532,6 +952,7 @@ export function VisaExplorer() {
 
               {/* Student */}
               {profile.situation === 'student' && (<>
+                <OccupationPicker label="🎯 สายอาชีพที่สนใจ" />
                 <Chips label="📅 อายุ" field="age" value={profile.age} options={[
                   { id: '18-24', text: '18-24' }, { id: '25-32', text: '25-32' },
                   { id: '33-39', text: '33-39' }, { id: '40+', text: '40+' },
@@ -558,6 +979,7 @@ export function VisaExplorer() {
 
               {/* WHV */}
               {profile.situation === 'whv' && (<>
+                <OccupationPicker label="🎯 อาชีพ/สายงาน (ช่วยแนะนำหลัง WHV)" />
                 <Chips label="📅 อายุ" field="age" value={profile.age} options={[
                   { id: '18-24', text: '18-24 ✅', sub: 'สมัครได้!' },
                   { id: '25-32', text: '25-30 ✅', sub: 'สมัครได้!' },
@@ -614,8 +1036,24 @@ export function VisaExplorer() {
               <h2 className="text-xl font-bold text-gray-800">🎯 เส้นทางที่แนะนำสำหรับคุณ</h2>
               <p className="text-xs text-gray-500 mt-1">
                 เรียงตามความเหมาะสม
-                {profile.situation === 'experienced' && ` • คะแนน Skilled: ${calcPoints(profile.age, profile.english, profile.experience, profile.education)}`}
+                {selectedOcc && ` • อาชีพ: ${selectedOcc.title}`}
+                {profile.situation === 'experienced' && ` • คะแนน: ${calcPoints(profile.age, profile.english, profile.experience, profile.education)}`}
               </p>
+              {selectedOcc && (
+                <div className="flex justify-center gap-2 mt-2 flex-wrap">
+                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold ${
+                    getShortageLevel(selectedOcc.shortageList) === 'pmsol' ? 'bg-green-100 text-green-700' :
+                    getShortageLevel(selectedOcc.shortageList) === 'mltssl' ? 'bg-blue-100 text-blue-700' :
+                    'bg-orange-100 text-orange-700'
+                  }`}>📋 {selectedOcc.shortageList}</span>
+                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-medium ${
+                    selectedOcc.demand === 'สูงมาก' || selectedOcc.demand === 'สูง' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>📈 ตลาดต้องการ: {selectedOcc.demand}</span>
+                  <span className="text-[10px] px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
+                    🎯 cut-off: {selectedOcc.minPoints} คะแนน
+                  </span>
+                </div>
+              )}
             </div>
 
             {recs.map((rec, i) => (
@@ -640,7 +1078,7 @@ export function VisaExplorer() {
                       <div className={`text-3xl font-black tabular-nums ${
                         rec.pct >= 80 ? 'text-green-600' : rec.pct >= 60 ? 'text-blue-600' : 'text-gray-400'
                       }`}>{animPcts[i] ?? rec.pct}%</div>
-                      <div className="text-[10px] text-gray-400 font-medium">เหมาะสม</div>
+                      <div className="text-[10px] text-gray-400 font-medium">ตาม data</div>
                     </div>
                   </div>
 
@@ -653,7 +1091,7 @@ export function VisaExplorer() {
                   </div>
 
                   {/* Tips */}
-                  <div className="space-y-1.5 mb-4">
+                  <div className="space-y-1.5 mb-3">
                     {rec.tips.map((t, j) => (
                       <div key={j} className="flex items-start gap-2 text-xs text-gray-600">
                         <span className={`mt-0.5 ${i === 0 ? 'text-blue-500' : 'text-gray-400'}`}>✦</span>
@@ -661,6 +1099,24 @@ export function VisaExplorer() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Factor Breakdown (data transparency) */}
+                  {rec.factors && rec.factors.length > 0 && (
+                    <div className={`rounded-lg p-2.5 mb-3 ${i === 0 ? 'bg-white/60 border border-blue-100' : 'bg-gray-50 border border-gray-100'}`}>
+                      <div className="text-[9px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">📊 คะแนนจากข้อมูลจริง</div>
+                      {rec.factors.map((f, fi) => (
+                        <div key={fi} className="flex items-center gap-2 mb-1 last:mb-0">
+                          <span className="text-[10px] text-gray-500 w-32 shrink-0 truncate">{f.label}</span>
+                          <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-700 ${
+                              f.value / f.max >= 0.7 ? 'bg-green-400' : f.value / f.max >= 0.4 ? 'bg-blue-400' : 'bg-gray-300'
+                            }`} style={{ width: `${Math.min((f.value / f.max) * 100, 100)}%` }} />
+                          </div>
+                          <span className="text-[10px] text-gray-500 w-8 text-right">{f.value}/{f.max}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Journey */}
                   <div className={`rounded-xl p-3 ${i === 0 ? 'bg-white/80 border border-blue-100' : 'bg-gray-50 border border-gray-100'}`}>
@@ -868,6 +1324,8 @@ export function VisaExplorer() {
             <div>• <a href="https://immi.homeaffairs.gov.au/visas/working-in-australia/skillselect" target="_blank" rel="noopener noreferrer" className="underline">Home Affairs — SkillSelect & Points Table</a></div>
             <div>• <a href="https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing" target="_blank" rel="noopener noreferrer" className="underline">Home Affairs — Visa Listing (ค่าธรรมเนียม)</a></div>
             <div>• <a href="https://immi.homeaffairs.gov.au/what-we-do/whm-program/latest-news/thai" target="_blank" rel="noopener noreferrer" className="underline">Home Affairs — Work and Holiday 462 (ไทย)</a></div>
+            <div>• <a href="https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list" target="_blank" rel="noopener noreferrer" className="underline">Skilled Occupation List (PMSOL/MLTSSL/STSOL)</a></div>
+            <div>• SkillSelect Invitation Rounds Nov 2025 — cut-off คะแนนอาชีพ 60+ สาย</div>
           </div>
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-3">
