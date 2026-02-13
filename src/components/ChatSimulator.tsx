@@ -81,6 +81,7 @@ const TOTAL_STAGES = STAGE_META.length
 const AI_SYSTEM_PROMPT = `คุณชื่อ "Catto" 🐱 ผู้ช่วยวิเคราะห์การย้ายประเทศ (14 ประเทศ ไม่ใช่แค่ออสเตรเลีย) คุยเป็นกันเอง ใช้ emoji พอดี
 
 ⛔ GUARDRAILS — ห้ามละเมิด:
+- ห้ามใช้ภาษาอื่นนอกจากภาษาไทย+อังกฤษ — ห้ามภาษาจีน ญี่ปุ่น เกาหลี หรืออักษรอื่น
 - ห้ามตอบเรื่องนอกเหนือจาก: การย้ายประเทศ, วีซ่า, ค่าครองชีพ, อาชีพ/เงินเดือน, คุณภาพชีวิต, เปรียบเทียบประเทศ
 - ถ้า user ถามนอกเรื่อง (สูตรอาหาร, การเมือง, ความรัก, การบ้าน, coding, ฯลฯ) → ตอบ: "เรื่องนี้ Catto ช่วยไม่ได้นะ 😸 ถามเรื่องย้ายประเทศมาได้เลย!"
 - ห้ามตอบยาวเกิน 3 ประโยค (ไม่เกิน 80 คำ) — ถ้ามีเยอะ ให้สรุปสั้นแล้วถามต่อ
@@ -246,11 +247,12 @@ export function ChatSimulator() {
   const goToCountryAnalysis = async () => {
     applyGatheredData(aiGathered)
     setPhase('analyzing')
+    const fallbackParams: MatchParams = {
+      goals: aiGathered.goals, occupation: aiGathered.occupation,
+      monthlyIncome: aiGathered.monthlyIncome, age: aiGathered.age, family: aiGathered.family,
+    }
     try {
-      const rankings = await rankCountriesWithAI(apiKey, {
-        goals: aiGathered.goals, occupation: aiGathered.occupation,
-        monthlyIncome: aiGathered.monthlyIncome, age: aiGathered.age, family: aiGathered.family,
-      }, COUNTRIES)
+      const rankings = await rankCountriesWithAI(apiKey, fallbackParams, COUNTRIES)
       const results: MatchResult[] = rankings
         .map(r => {
           const country = COUNTRIES.find(c => c.id === r.countryId)
@@ -258,16 +260,14 @@ export function ChatSimulator() {
           return { country, matchPct: r.matchPct, highlights: r.highlights, challenges: r.challenges.length > 0 ? r.challenges : country.cons, occupationNote: r.reason }
         })
         .filter((r): r is MatchResult => r !== null)
+      // If AI returned bad country IDs → fall through to hardcoded
+      if (results.length === 0) throw new Error('no valid results from AI')
       setMatchResults(results)
       runAiAnalysis(aiGathered, results)
       setPhase('countryResults')
     } catch {
-      // Fallback to hardcoded matching if AI fails
-      const params: MatchParams = {
-        goals: aiGathered.goals, occupation: aiGathered.occupation,
-        monthlyIncome: aiGathered.monthlyIncome, age: aiGathered.age, family: aiGathered.family,
-      }
-      const results = matchCountries(params)
+      // Fallback to hardcoded matching — always produces results
+      const results = matchCountries(fallbackParams)
       setMatchResults(results)
       runAiAnalysis(aiGathered, results)
       setPhase('countryResults')
@@ -327,28 +327,37 @@ export function ChatSimulator() {
     sendMessage(text)
   }
 
-  // Determine what chips to show based on current gathered state
+  // Determine what chips to show — match the LAST BOT MESSAGE topic, not just gathered state
   type ChipMode = 'none' | 'goals' | 'goals-confirm' | 'occ-search' | 'age' | 'family' | 'income'
   const getChipMode = (): ChipMode => {
     if (aiLoading || aiGathered.ready || aiMessages.length < 1) return 'none'
-    // Goals phase: let user type freely first, then show confirm chips
+    const lastBotMsg = [...aiMessages].reverse().find(m => m.role === 'bot')
+    if (!lastBotMsg) return 'none'
+    const txt = lastBotMsg.text.toLowerCase()
+    // Off-topic rejection → no chips
+    if (txt.includes('catto ช่วยไม่ได้')) return 'none'
+
+    // Detect what the AI is asking about from its message
+    const asksIncome = /รายได้|เงินเดือน|เดือนละ|ได้เท่าไร|salary|income/.test(txt)
+    const asksAge = /อายุ|เกิดปี|กี่ปี|age/.test(txt)
+    const asksFamily = /ครอบครัว|ไปคนเดียว|แต่งงาน|ลูก|single|family|couple/.test(txt)
+    const asksOcc = /อาชีพ|ทำงาน|ทำอะไร|ตำแหน่ง|งาน.*อะไร|occupation|job/.test(txt)
+
+    // Priority: show chips matching what AI asks; fall back to gathered-state order
+    if (asksIncome && aiGathered.monthlyIncome === 0) return 'income'
+    if (asksAge && !aiGathered.age) return 'age'
+    if (asksFamily && !aiGathered.family) return 'family'
+    if (asksOcc && !aiGathered.occupation) return 'occ-search'
+
+    // Fallback: follow gathered-state order for what's missing
     if (aiGathered.goals.length === 0) {
-      // Show goal chips after 1+ exchange, but only if last bot message isn't an off-topic rejection
       const userMsgCount = aiMessages.filter(m => m.role === 'user').length
-      if (userMsgCount < 1) return 'none'
-      const lastBotMsg = [...aiMessages].reverse().find(m => m.role === 'bot')
-      if (lastBotMsg && lastBotMsg.text.includes('Catto ช่วยไม่ได้')) return 'none'
-      return 'goals'
+      return userMsgCount >= 1 ? 'goals' : 'none'
     }
-    // Goals detected but not confirmed: show remaining goals + "ไปต่อ"
     if (!goalsConfirmed) return 'goals-confirm'
-    // Occupation phase: show search
     if (!aiGathered.occupation) return 'occ-search'
-    // Age
     if (!aiGathered.age) return 'age'
-    // Family
     if (!aiGathered.family) return 'family'
-    // Income
     if (aiGathered.monthlyIncome === 0) return 'income'
     return 'none'
   }
@@ -681,7 +690,7 @@ export function ChatSimulator() {
             <div className="quick-replies animate-fade-in">
               <div className="chip-hint">เลือกช่วงเงินเดือน หรือพิมพ์ตัวเลข ✍️</div>
               <div className="chip-grid">
-                {['15,000 บาท', '25,000 บาท', '35,000 บาท', '50,000 บาท', '80,000 บาท', '100,000+ บาท'].map(label => (
+                {['15,000 บาท', '25,000 บาท', '35,000 บาท', '50,000 บาท', '80,000 บาท', '100,000 บาท', '150,000 บาท', '200,000+ บาท'].map(label => (
                   <button key={label} onClick={() => sendMessage(label)} className="quick-chip">{label}</button>
                 ))}
               </div>
