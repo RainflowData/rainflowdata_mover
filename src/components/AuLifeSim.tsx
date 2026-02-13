@@ -8,6 +8,7 @@ import {
   calculateSimpleVisaScore,
 } from '@/data/simulator-data'
 import { occupations, POPULAR_OCCUPATIONS, searchOccupations } from '@/data/occupations'
+import { ShareButtons } from './ShareButtons'
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
@@ -587,6 +588,11 @@ export function AuLifeSim() {
         <button onClick={restart} className="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-medium">
           🔄 ลองใหม่
         </button>
+      </div>
+
+      {/* Share buttons */}
+      <div className="mt-3">
+        <ShareButtons />
       </div>
     </div>
   )
