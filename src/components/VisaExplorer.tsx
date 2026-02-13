@@ -934,10 +934,11 @@ export function VisaExplorer() {
         <div className="card">
           <div className="text-center mb-5">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 mb-3">
-              <span className="text-3xl">🤖</span>
+              <span className="text-3xl">🐱</span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Visa Advisor</h2>
-            <p className="text-sm text-gray-500 mt-1">ตอบ 2-3 คำถาม แล้วเราจะหาเส้นทางที่ดีที่สุดให้คุณ</p>
+            <h2 className="text-2xl font-bold text-gray-800">ผู้ช่วยข้อมูลวีซ่าออสเตรเลีย 🇦🇺</h2>
+            <p className="text-sm text-gray-500 mt-1">ตอบ 2-3 คำถาม แล้ว Catto จะหาเส้นทางที่ดีที่สุดให้คุณ</p>
+            <p className="text-[10px] text-gray-400 mt-2">⚠️ ไม่ใช่คำแนะนำทางกฎหมาย เป็นข้อมูลทั่วไปเท่านั้น ควรปรึกษา MARA agent ก่อนตัดสินใจ</p>
           </div>
 
           {/* Progress */}
@@ -953,9 +954,9 @@ export function VisaExplorer() {
           {step === 0 && (
             <div className="animate-fade-in">
               <div className="flex gap-2 mb-5">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-sm">🤖</div>
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-sm">🐱</div>
                 <div className="bg-blue-50 rounded-2xl rounded-tl-lg p-3 max-w-[85%]">
-                  <p className="text-sm text-gray-700">สวัสดี! 👋 เรามาหาวีซ่าที่เหมาะกับคุณกัน<br/>ตอนนี้สถานะของคุณเป็นยังไง?</p>
+                  <p className="text-sm text-gray-700">สวัสดี! 🐱 เรามาหาวีซ่าที่เหมาะกับคุณกัน<br/>ตอนนี้สถานะของคุณเป็นยังไง?</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -984,7 +985,7 @@ export function VisaExplorer() {
           {step === 1 && (
             <div className="animate-fade-in">
               <div className="flex gap-2 mb-5">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-sm">🤖</div>
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-sm">🐱</div>
                 <div className="bg-blue-50 rounded-2xl rounded-tl-lg p-3 max-w-[85%]">
                   <p className="text-sm text-gray-700">
                     {profile.situation === 'experienced' ? 'เยี่ยม! 💪 ขอข้อมูลเพิ่มเพื่อคำนวณ Points — กดเลือกได้เลย' :
@@ -1324,7 +1325,7 @@ export function VisaExplorer() {
               <p className="text-xs text-gray-500 mt-1">ดูวีซ่าทั้งหมด 10 ประเภท</p>
             </div>
             <button onClick={reset} className="text-xs text-blue-600 font-medium hover:bg-blue-50 px-3 py-2 rounded-xl transition-colors">
-              🤖 ใช้ Advisor
+              🐱 ใช้ Catto ช่วย
             </button>
           </div>
         </div>

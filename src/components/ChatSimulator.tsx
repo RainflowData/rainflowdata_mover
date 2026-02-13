@@ -77,7 +77,7 @@ const STAGE_META = [
 const TOTAL_STAGES = STAGE_META.length
 
 // ===== AI SYSTEM PROMPT =====
-const AI_SYSTEM_PROMPT = `คุณชื่อ "Rain" ที่ปรึกษาย้ายประเทศ คุยสนุกเป็นกันเอง สั้นกระชับ ใช้ emoji บ้าง
+const AI_SYSTEM_PROMPT = `คุณชื่อ "Catto" 🐱 ผู้ช่วยข้อมูลย้ายประเทศไปออสเตรเลีย คุยสนุกเป็นกันเอง สั้นกระชับ ใช้ emoji บ้าง
 
 Flow การสนทนา:
 1. คำถามแรก: ถาม "เล่าให้ฟังหน่อยสิ ทำไมถึงอยากย้าย?" → ให้ user ระบายอิสระ ห้ามให้เลือกช้อย
@@ -167,7 +167,7 @@ export function ChatSimulator() {
   const startAiChat = () => {
     setAiMode(true)
     setPhase('aiChat')
-    const greeting = 'สวัสดีจ้า! 👋 ฉันชื่อ Rain — ที่ปรึกษาย้ายประเทศของคุณ\n\nเล่าให้ฟังหน่อยสิ ทำไมถึงคิดอยากย้ายไปอยู่ต่างประเทศ? 🌍'
+    const greeting = 'เหมียว! 🐱 ฉันชื่อ Catto — ผู้ช่วยข้อมูลย้ายไปออสเตรเลีย\n\nเล่าให้ฟังหน่อยสิ ทำไมถึงคิดอยากย้ายไปอยู่ต่างประเทศ? 🌍'
     setAiMessages([{ role: 'bot', text: greeting }])
     setAiChatHistory([{ role: 'system', content: AI_SYSTEM_PROMPT }, { role: 'assistant', content: JSON.stringify({ message: greeting, gathered: { goals: [], occupation: '', monthlyIncome: 0, age: '', family: '', ready: false } }) }])
   }
@@ -466,7 +466,7 @@ export function ChatSimulator() {
             <div className="text-sm text-gray-500 mb-8">AI วิเคราะห์จาก 14 ประเทศ — เงินเดือน วีซ่า ค่าครองชีพจริง</div>
 
             <button onClick={startAiChat} className="btn-primary w-full justify-center rounded-xl py-4 text-base mb-3">
-              🤖 เริ่มคุยกับ AI วิเคราะห์
+              🐱 เริ่มคุยกับ AI วิเคราะห์
             </button>
 
             <button onClick={() => setPhase('quiz')} className="w-full py-3 rounded-xl border-2 border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-medium">
@@ -497,7 +497,7 @@ export function ChatSimulator() {
           {/* Loading indicator */}
           {aiLoading && (
             <div className="chat-bubble bot animate-fade-in">
-              <span className="bot-avatar">🤖</span>
+              <span className="bot-avatar">🐱</span>
               <div className="bubble-content ai-typing">
                 <span className="dot" /><span className="dot" /><span className="dot" />
               </div>
@@ -676,7 +676,7 @@ export function ChatSimulator() {
             <div className="ai-done-card animate-fade-in">
               <div className="text-center mb-4">
                 <div className="text-3xl mb-1">✨</div>
-                <div className="text-lg font-bold text-gray-800">Rain เข้าใจคุณแล้ว!</div>
+                <div className="text-lg font-bold text-gray-800">Catto เข้าใจคุณแล้ว! 🐱</div>
                 <div className="text-xs text-gray-500 mt-1">เลือกว่าจะดูอะไรต่อ</div>
               </div>
               <button onClick={goToCountryAnalysis} className="btn-primary w-full justify-center rounded-xl py-3 text-sm mb-2">
@@ -892,7 +892,7 @@ export function ChatSimulator() {
         <div className="sim-scroll flex flex-col items-center justify-center min-h-[400px]">
           <div className="analyzing-screen animate-fade-in text-center">
             <div className="text-5xl mb-4 analyzing-globe">🌍</div>
-            <div className="text-xl font-bold text-gray-800 mb-2">{aiMode ? '🤖 AI กำลังวิเคราะห์ให้คุณ...' : `กำลังวิเคราะห์ ${COUNTRIES.length} ประเทศ...`}</div>
+            <div className="text-xl font-bold text-gray-800 mb-2">{aiMode ? '🐱 Catto กำลังวิเคราะห์ให้คุณ...' : `กำลังวิเคราะห์ ${COUNTRIES.length} ประเทศ...`}</div>
             <div className="text-sm text-gray-500 mb-4">
               {aiMode
                 ? `วิเคราะห์ข้อมูลของคุณเทียบ ${COUNTRIES.length} ประเทศ — เงินเดือน วีซ่า ค่าครองชีพจริง`
@@ -918,7 +918,7 @@ export function ChatSimulator() {
         <div className="sim-scroll">
           <div className="text-center mb-4 animate-fade-in">
             <div className="text-3xl font-bold text-gray-800 mb-1">🌍 ผลวิเคราะห์ของคุณ!</div>
-            <div className="text-sm text-gray-500">{aiMode ? '🤖 AI วิเคราะห์จาก' : 'จาก'} {COUNTRIES.length} ประเทศ — นี่คือ Top 5 ที่เหมาะกับคุณ</div>
+            <div className="text-sm text-gray-500">{aiMode ? '🐱 Catto วิเคราะห์จาก' : 'จาก'} {COUNTRIES.length} ประเทศ — นี่คือ Top 5 ที่เหมาะกับคุณ</div>
           </div>
 
           <div className="space-y-3">
@@ -1031,7 +1031,7 @@ export function ChatSimulator() {
           {/* AI Analysis */}
           {aiMode && aiAnalysis && (
             <div className="ai-analysis-card animate-fade-in mt-4">
-              <div className="text-sm font-bold text-gray-800 mb-2">🤖 AI วิเคราะห์ให้คุณ</div>
+              <div className="text-sm font-bold text-gray-800 mb-2">🐱 Catto วิเคราะห์ให้คุณ</div>
               <div className="text-sm text-gray-700 whitespace-pre-wrap">{aiAnalysis}</div>
             </div>
           )}
@@ -1536,7 +1536,7 @@ export function ChatSimulator() {
 function BotMsg({ children }: { children: React.ReactNode }) {
   return (
     <div className="chat-bubble bot animate-fade-in">
-      <span className="bot-avatar">🤖</span>
+      <span className="bot-avatar">🐱</span>
       <div className="bubble-content">{children}</div>
     </div>
   )
